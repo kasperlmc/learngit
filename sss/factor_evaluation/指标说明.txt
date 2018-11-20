@@ -1,0 +1,10 @@
+hv:高波动时期
+lv:低波动时期
+ann_ret:年化收益率
+win_r：胜率
+sharpe:夏普比率
+max_drawdown:最大回撤
+annualVolatility:年化波动率
+sum=standardized(ann_ret)+standardized(1/max_drawdown)+standardized(1/annualVolatility)+standardized(win_r)
+positive:意味着在构建策略进行回测时，因子的数值较大时，看多，因子值较小时看空。
+negative:意味着在构建策略进行回测时，因子的数值较大时，看空，因子值较小时看多。
