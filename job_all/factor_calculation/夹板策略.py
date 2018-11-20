@@ -37,17 +37,12 @@ def tail_call_optimized(g):
     func.__doc__ = g.__doc__
     return func
 
-import os
-sys.path.append('..')
+sys.path.append('D:\\Users\\ttttt\\job_all')
 from lib.myfun import *
-import copy
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import ParameterGrid
-import talib as ta
-import copy
 import logging
-import matplotlib.pyplot as plt
 
 
 #显示所有列

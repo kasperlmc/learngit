@@ -271,7 +271,7 @@ for x in a:
     else:
         alpha_test.append("Alpha.alpha" + str(x))
 
-#alpha_test=["Alpha.alpha019"]
+alpha_test=["Alpha.alpha018"]
 for alpha in alpha_test:
     try:
         for symbol in symbols:
