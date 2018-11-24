@@ -204,7 +204,6 @@ def saradx_long(cash_list,btcnum_list,fee_list,pos_list):
         if adx_value>0:
             if btcnum_list[-1]==0:
                 recent_bull = df_got["psarbull"].values[-10:]
-                recent_bear = df_got["psarbear"].values[-30:]
                 if (psar_bull > 0) and (vol < 1.5) and (len(recent_bull[recent_bull>0])>6) :
                     buy_price = df_now.open * (1 + slippage)
                     buyamount = cash_list[-1] / buy_price

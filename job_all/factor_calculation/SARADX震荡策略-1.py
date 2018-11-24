@@ -3,7 +3,6 @@
 import sys
 sys.path.append('..')
 import pandas as pd
-import matplotlib.pyplot as plt
 from lib.mutilple_factor_test import *
 from backtest import *
 

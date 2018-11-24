@@ -117,7 +117,7 @@ def psar(barsdata, iaf=0.02, maxaf=0.2):
             "psarbull": psarbull}
 
 exchange = 'BIAN'
-symbols = ['eosusdt']
+symbols = ['xrpusdt']
 
 dataf = read_data(exchange, symbols[0], '1h', "2017-01-01", "2018-10-01")
 
@@ -204,7 +204,6 @@ def saradx_long(cash_list,btcnum_list,fee_list,pos_list):
         if adx_value>0:
             if btcnum_list[-1]==0:
                 recent_bull = df_got["psarbull"].values[-10:]
-                recent_bear = df_got["psarbear"].values[-30:]
                 if (psar_bull > 0) and (vol < 4) and (len(recent_bull[recent_bull>0])>6) :
                     buy_price = df_now.open * (1 + slippage)
                     buyamount = cash_list[-1] / buy_price
@@ -228,7 +227,7 @@ def saradx_long(cash_list,btcnum_list,fee_list,pos_list):
                     pos_list.append(pos_list[-1])
                     return saradx_long(cash_list, btcnum_list, fee_list, pos_list)
 
-                elif ((psar_bear>0) and (vol<4) and (adx_value>25) and (len(recent_bear[recent_bear>0])<=6)):
+                elif ((psar_bear>0) and (vol < 4) and (adx_value>25) and (len(recent_bear[recent_bear>0])<=6)):
                     btcnum_list.append(btcnum_list[-1])
                     cash_list.append(cash_list[-1])
                     fee_list.append(0)
@@ -261,4 +260,4 @@ def saradx_long(cash_list,btcnum_list,fee_list,pos_list):
 cash_list,btcnum_list,fee_list,pos_list=saradx_long([],[],[],[])
 df=pd.DataFrame({"cash":cash_list,"btc":btcnum_list,"fee":fee_list,"pos":pos_list})
 df[["date","close","vol","high","low"]]=result_adx[["date","close","vol","high","low"]]
-df.to_csv("saradx_long_eos.csv")
+df.to_csv("saradx_long_xrp_1.csv")

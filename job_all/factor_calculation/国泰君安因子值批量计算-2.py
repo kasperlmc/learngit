@@ -37,11 +37,13 @@ for x in a:
 #print(alpha_test)
 #print(alpha_use)
 
-
+alpha_test=["Alpha.alpha001"]
 if __name__ == '__main__':
 
     exchange = 'BITFINEX'
     symbols = ['btcusdt',"ethusdt","xrpusdt","zecusdt","eosusdt","neousdt","ltcusdt","etcusdt","etpusdt","iotusdt"]
+    symbols = ["rrtusdt","xmrusdt","dashusdt","avtusdt","omgusdt","sanusdt","qtumusdt","edousdt","btgusdt","trxusdt",
+               "zrxusdt","tmbusdt","funusdt","manausdt","sntusdt","gntusd"]
 
     # 因子是price_volume, 有一个参数corr_window, 参数取值10/25/50
     # 能形成三组因子时间序列：price_volume_10/25/50, 存入本地和数据库
@@ -53,6 +55,8 @@ if __name__ == '__main__':
             #col_name = build_col_name(factor_name, param)
             try:
                 dataf = read_data(exchange, symbol, '1h', "2017-01-01", "2018-10-01")
+                print(symbol)
+                print(dataf.head())
                 Alpha = Alphas(dataf)
                 col_name=factor
                 df_m=copy.deepcopy(dataf)

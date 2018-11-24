@@ -7,6 +7,7 @@ from backtest import *
 import matplotlib.pyplot as plt
 from lib import dataapi
 import pandas as pd
+import numpy as np
 
 # 显示所有列
 pd.set_option('display.max_columns', None)

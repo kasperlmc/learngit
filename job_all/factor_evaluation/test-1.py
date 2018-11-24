@@ -11,3 +11,11 @@ a=pd.Series(a,name="a")
 b=pd.Series(b,name="b")
 
 print((a-b).abs()/2)
+
+
+a="aa"
+l=["ab","bb","cc"]
+if a in l:
+    print("y")
+else:
+    print("n")
