@@ -58,10 +58,10 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
         return cash_list,asset_list,buy_list,btcnum_list,close_list,max_value_list
 
     df_last_min=df[symbols].ix[n-1]
-    min_idx=df_last_min.idxmin()
-    max_value=df_last_min.min()
+    min_idx=df_last_min.idxmax()
+    max_value=df_last_min.max()
     max_value_list.append(max_value)
-    if min_idx in ["btcusdt","ethusdt","xrpusdt","eosusdt"]:
+    if min_idx in ["btcusdt","ethusdt","xrpusdt","eosusdt","trxusdt"]:
         if buy_list[-1]==min_idx:
             df_now_all = df.ix[n]
             cash_list.append(cash_list[-1])
@@ -91,13 +91,13 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                 # posittion=max(posittion,0.05)
                 # posittion=min(posittion,1)
 
-                df_close=df[symbols_close].ix[n-2:n-1]
-                df_close_diff=df_close.diff()
-                df_close_diff=df_close_diff.ix[n-1].values
-                # print(len(df_close_diff[df_close_diff>0]))
-                length_diff=len(df_close_diff[df_close_diff>0])-2
-                length_diff=np.sign(length_diff)
-                posittion=length_diff
+                # df_close=df[symbols_close].ix[n-2:n-1]
+                # df_close_diff=df_close.diff()
+                # df_close_diff=df_close_diff.ix[n-1].values
+                # # print(len(df_close_diff[df_close_diff>0]))
+                # length_diff=len(df_close_diff[df_close_diff>0])-2
+                # length_diff=np.sign(length_diff)
+                # posittion=length_diff
                 buy_price=df_now_all[min_idx+"_open"]*(1+slippage)
                 # logger.info("买入价格为%s,卖出价格为%s"%(buy_price,sell_price))
                 buy_amount=((cash_get+cash_list[-1])*posittion)/buy_price
@@ -149,6 +149,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
 
 
 def total_ret(net):
+    print(net.iloc[-1],net.iloc[0])
     return net.iloc[-1] / net.iloc[0] - 1
 
 def long_ret(net_df):
@@ -236,18 +237,20 @@ def mkfpath(folder, fname):
     return fpath
 
 def summary_net(net_df, plot_in_loops,alphas):
+    print("dw")
     month_ret = month_profit(net_df)
     # 转换成日净值
     net_df.set_index('date_time', inplace=True)
     net_df = net_df.resample('1D').asfreq()
     net_df.reset_index(inplace=True)
-    net_df.dropna(inplace=True)
+    print(net_df)
 
     # 计算汇总
     net = net_df['net']
     date_time = net_df['date_time']
     base = net_df['close']
     tot_ret = total_ret(net)
+    print(tot_ret)
     ann_ret = annual_ret(date_time, net)
     sharpe = sharpe_ratio(net)
     annualVolatility = AnnualVolatility(net)
@@ -284,7 +287,10 @@ def summary_net(net_df, plot_in_loops,alphas):
 
     return result, cols
 
-symbols = ['btcusdt',"ethusdt","xrpusdt","zecusdt","eosusdt","neousdt","ltcusdt","etcusdt","etpusdt","iotusdt"]
+symbols = ['btcusdt',"ethusdt","xrpusdt","zecusdt","eosusdt","neousdt","ltcusdt",
+           "etcusdt","etpusdt","iotusdt","rrtusdt","xmrusdt","dshusdt","avtusdt",
+           "omgusdt","sanusdt","qtmusdt","edousdt","btgusdt","trxusdt","zrxusdt",
+           "tnbusdt","funusdt","mnausdt","sntusdt","gntusdt"]
 
 '''
 alpha_test=["Alpha.alpha003","Alpha.alpha007","Alpha.alpha009","Alpha.alpha014","Alpha.alpha018","Alpha.alpha019",
@@ -311,7 +317,8 @@ for x in a:
     else:
         alpha_test.append("Alpha.alpha" + str(x))
 
-# alpha_test=["Alpha.alpha049"]
+alpha_test=["Alpha.alpha118"]
+print("max")
 for alpha in alpha_test:
     try:
         for symbol in symbols:
@@ -330,7 +337,7 @@ for alpha in alpha_test:
         df["date_time"]=df.index
         df.index=df["index"]
         print(alpha)
-        symbols_close=[x+"_close" for x in ["btcusdt","ethusdt","xrpusdt","eosusdt"]]
+        symbols_close=[x+"_close" for x in ["btcusdt","ethusdt","xrpusdt","eosusdt","trxusdt"]]
         df["index"]=(df[symbols_close]/df[symbols_close].iloc[0]).sum(axis=1)
         # df["index_ma5"]=ta.MA(df["index"].values,timeperiod=5)
         # df["index_ma20"]=ta.MA(df["index"].values,timeperiod=20)
@@ -382,8 +389,8 @@ for alpha in alpha_test:
         # df_result["index_ma5"]=df["index_ma5"]
         # df_result["index_ma20"]=df["index_ma20"]
         df_result["date_time"] = pd.to_datetime(df_result["date_time"])
-        # print(df_result[["net","asset_diff","buy","asset"]])
-        result,cols=summary_net(df_result,1,alpha+"_bitfinex_positive_new_3")
+        print(df_result[["net","asset_diff","buy","asset","date_time"]])
+        result,cols=summary_net(df_result,0,alpha+"_bitfinex_positive_new_3")
         result=result+sum_ret_symbol
         result.append(trade_times)
         cols=cols+symbols
