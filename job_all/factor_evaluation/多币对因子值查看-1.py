@@ -149,7 +149,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
 
 
 def total_ret(net):
-    print(net.iloc[-1],net.iloc[0])
+    # print(net.iloc[-1],net.iloc[0])
     return net.iloc[-1] / net.iloc[0] - 1
 
 def long_ret(net_df):
@@ -170,11 +170,10 @@ def month_profit(net_df):
     return month_ret
 
 
-def annual_ret(date_time, net):
+def annual_ret(net):
     # input daily net
     tot_ret = total_ret(net)
-    time_delta = date_time.iloc[-1] - date_time.iloc[0]
-    day = time_delta.days
+    day = len(net)
     return (tot_ret + 1) ** (365.0 / day) - 1
 
 def AnnualVolatility(net):
@@ -196,15 +195,6 @@ def sharpe_ratio(net):
     return sharpe
 
 
-def infomation_ratio(date_time, base, net):
-    # input daily net
-    net_ann_ret = annual_ret(date_time, net)
-    base_ann_ret = annual_ret(date_time, base)
-    diff_ret_std = (net.pct_change()-base.pct_change()).std() * np.sqrt(365)
-    ir = (net_ann_ret - base_ann_ret) / diff_ret_std
-    return ir
-
-
 def max_drawdown(A):
     I = -99999999
     for i in range(len(A)-1):
@@ -213,20 +203,6 @@ def max_drawdown(A):
         maxval = 1-min_a/A[i]
         I = max(I,maxval)
     return I*100
-
-def alpha_beta(date_time, base, net):
-    # beta 是日收益的线性拟合斜率
-    base_p = base.pct_change()
-    net_p = net.pct_change()
-    days = len(base_p) - 1
-    beta = (days * (base_p * net_p).sum() - base_p.sum() * net_p.sum()
-            ) / (days * (base_p * base_p).sum() - base_p.sum() * base_p.sum())
-
-    # 3%无风险收益
-    rf = 0.03
-    alpha = (annual_ret(date_time, net) - rf
-             - beta * (annual_ret(date_time, base) - rf))
-    return alpha, beta
 
 def mkfpath(folder, fname):
     try:
@@ -237,32 +213,31 @@ def mkfpath(folder, fname):
     return fpath
 
 def summary_net(net_df, plot_in_loops,alphas):
-    print("dw")
     month_ret = month_profit(net_df)
     # 转换成日净值
     net_df.set_index('date_time', inplace=True)
-    net_df = net_df.resample('1D').asfreq()
-    net_df.reset_index(inplace=True)
-    print(net_df)
+    # print(net_df)
+    # print(len(net_df))
+    net_df = net_df.resample(rule='1D').apply({"net":"last","index":"last"})#.asfreq()
+    # net_df.reset_index(inplace=True)
+    # print(net_df.asfreq())
+    net_df.dropna(how="all",inplace=True)
+
 
     # 计算汇总
+    net_df["date_time"]=net_df.index
     net = net_df['net']
-    date_time = net_df['date_time']
-    base = net_df['close']
     tot_ret = total_ret(net)
-    print(tot_ret)
-    ann_ret = annual_ret(date_time, net)
+    ann_ret = annual_ret(net)
     sharpe = sharpe_ratio(net)
     annualVolatility = AnnualVolatility(net)
     drawdown = max_drawdown(net.values)
-    alpha, beta = alpha_beta(date_time, base, net)
-    ir = infomation_ratio(date_time, base, net)
     ret_r = ann_ret / drawdown
 
     result = [tot_ret, ann_ret, sharpe, annualVolatility,
-              drawdown, alpha, beta, ret_r, ir,
+              drawdown, ret_r,
               net_df['date_time'].iloc[0], net_df['date_time'].iloc[-1]]
-    cols = ['tot_ret', 'ann_ret', 'sharpe', 'annualVolatility', 'max_drawdown', 'alpha', 'beta', 'ret_ratio', 'ir', 'start_time', 'end_time']
+    cols = ['tot_ret', 'ann_ret', 'sharpe', 'annualVolatility', 'max_drawdown', 'ret_ratio', 'start_time', 'end_time']
 
     if plot_in_loops:
         param_str="multiple"+alphas
@@ -317,7 +292,7 @@ for x in a:
     else:
         alpha_test.append("Alpha.alpha" + str(x))
 
-alpha_test=["Alpha.alpha118"]
+# alpha_test=["Alpha.alpha118"]
 print("max")
 for alpha in alpha_test:
     try:
@@ -389,8 +364,8 @@ for alpha in alpha_test:
         # df_result["index_ma5"]=df["index_ma5"]
         # df_result["index_ma20"]=df["index_ma20"]
         df_result["date_time"] = pd.to_datetime(df_result["date_time"])
-        print(df_result[["net","asset_diff","buy","asset","date_time"]])
-        result,cols=summary_net(df_result,0,alpha+"_bitfinex_positive_new_3")
+        # print(df_result[["net","asset_diff","buy","asset","date_time"]])
+        result,cols=summary_net(df_result[["net","close","index","date_time"]],0,alpha+"_bitfinex_positive_new_3")
         result=result+sum_ret_symbol
         result.append(trade_times)
         cols=cols+symbols
@@ -398,7 +373,7 @@ for alpha in alpha_test:
         stat_ls=[result]
         df_last=pd.DataFrame(stat_ls,columns=cols)
         print(df_last)
-    except:
+    except FileNotFoundError:
         pass
 
 

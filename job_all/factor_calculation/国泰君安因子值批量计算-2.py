@@ -43,7 +43,7 @@ if __name__ == '__main__':
     exchange = 'BITFINEX'
     symbols = ['btcusdt',"ethusdt","xrpusdt","zecusdt","eosusdt","neousdt","ltcusdt","etcusdt","etpusdt","iotusdt"]
     symbols = ["rrtusdt","xmrusdt","dshusdt","avtusdt","omgusdt","sanusdt","qtmusdt","edousdt","btgusdt","trxusdt",
-               "zrxusdt","tnbusdt","funusdt","mnausdt","sntusdt","gntusdt"]
+               "zrxusdt","tnbusdt","funusdt", "mnausdt","sntusdt","gntusdt"]
 
     # 因子是price_volume, 有一个参数corr_window, 参数取值10/25/50
     # 能形成三组因子时间序列：price_volume_10/25/50, 存入本地和数据库
