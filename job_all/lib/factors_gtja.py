@@ -15,7 +15,7 @@ pd.set_option('display.max_columns', None)
 #显示所有行
 pd.set_option('display.max_rows', None)
 
-data=pd.read_csv("D:\\workdata\\data\\btcusdt_1d.csv",index_col="Unnamed: 0")
+# data=pd.read_csv("D:\\workdata\\data\\btcusdt_1d.csv",index_col="Unnamed: 0")
 #print(data.head())
 
 def ts_sum(df ,window=10):

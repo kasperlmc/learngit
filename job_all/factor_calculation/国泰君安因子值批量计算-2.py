@@ -37,13 +37,15 @@ for x in a:
 #print(alpha_test)
 #print(alpha_use)
 
-# alpha_test=["Alpha.alpha001"]
+# alpha_test=["Alpha.alpha020"]
 if __name__ == '__main__':
 
     exchange = 'BITFINEX'
-    symbols = ['btcusdt',"ethusdt","xrpusdt","zecusdt","eosusdt","neousdt","ltcusdt","etcusdt","etpusdt","iotusdt"]
-    symbols = ["rrtusdt","xmrusdt","dshusdt","avtusdt","omgusdt","sanusdt","qtmusdt","edousdt","btgusdt","trxusdt",
-               "zrxusdt","tnbusdt","funusdt","mnausdt","sntusdt","gntusdt"]
+    symbols = ['btcusdt',"ethusdt","xrpusdt","zecusdt","eosusdt","neousdt",
+               "ltcusdt","etcusdt","etpusdt","iotusdt","rrtusdt","xmrusdt",
+               "dshusdt","avtusdt","omgusdt","sanusdt","qtmusdt","edousdt","btgusdt","trxusdt",
+               "zrxusdt","tnbusdt","funusdt", "mnausdt","sntusdt","gntusdt"]
+    symbols = ["ethusdt"]
 
     # 因子是price_volume, 有一个参数corr_window, 参数取值10/25/50
     # 能形成三组因子时间序列：price_volume_10/25/50, 存入本地和数据库
@@ -62,7 +64,7 @@ if __name__ == '__main__':
                 df_m=copy.deepcopy(dataf)
                 df_m[col_name] = eval(factor)()
                 factor_name=factor + "_" + "gtja1h"
-                fname = '../factor_writedb/multiple_subject/' + symbol + '_' + factor_name + '.csv'
+                fname = '/Users/wuyong/alldata/factor_writedb/factor_stra/' + symbol + '_' + factor_name + '.csv'
                 write_db(df_m, fname, False)
                 print('write' + fname + '...')
             except AttributeError:

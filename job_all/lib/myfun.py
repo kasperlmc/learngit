@@ -28,7 +28,7 @@ def mkfpath(folder, fname):
         os.mkdir(folder)
     except:
         pass
-    fpath = folder + '\\' + fname
+    fpath = folder + "/" +fname
     return fpath
 
 
@@ -36,7 +36,7 @@ def read_data(exchange, symbol, period, start_day, end_day):
     # 从数据库或文件中读数据
     fname = f'{exchange}_{symbol}_{period}_{start_day}_{end_day}'
     fname = fname.replace('/', '_')
-    fpath = mkfpath('.\\api_data', fname + '.csv')
+    fpath = mkfpath('/Users/wuyong/alldata/original_data', fname + '.csv')
     print(fpath)
     print('reading and writing %s...' % fname)
 
