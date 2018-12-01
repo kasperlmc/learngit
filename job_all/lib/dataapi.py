@@ -503,13 +503,13 @@ if __name__ == '__main__':
     print(errcode,errmsg)
     print(df)
 
-    errcode, errmsg, df = get_exsymbol_kline("BITFINEX", "gntusdt", "1h", "2017-01-01", "2018-10-29")
+    errcode, errmsg, df = get_exsymbol_kline("BITMEX", ".bxbt", "1h", "2017-01-01", "2018-10-29")
     print(df.head())
-    #e_time = time.time()
-    #print("total:"+str(e_time-s_time))
+    # e_time = time.time()
+    # print("total:"+str(e_time-s_time))
     #
-    #errcode, errmsg, result = get_huobi_exchange()
-    #print(result)
+    # errcode, errmsg, result = get_huobi_exchange()
+    # print(result)
 
     # errcode, errmsg, result = get_huobi_ontime_kline('btcusdt', '15min', '2018-10-10 00:30', '2018-10-10 00:40')
     # print(result.head(30))

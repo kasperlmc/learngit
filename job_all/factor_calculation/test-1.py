@@ -75,9 +75,10 @@ if not ((a and c) or b):
 # '''
 data["date_time"] = pd.to_datetime(data["date"])
 data_test=copy.deepcopy(data)
-#print(data_test)
-df = data_test.resample(rule="4h", on='date_time').apply({'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'})
-#print(data_test["high"].resample(rule="4h",how="max",on="date_time"))
+# print(data_test)
+df = data_test.resample(rule="4h", on='date_time').apply({'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last',
+                                                          'volume': 'sum'})
+# print(data_test["high"].resample(rule="4h",how="max",on="date_time"))
 
 df["amount"]=df["volume"]
 print(df)
