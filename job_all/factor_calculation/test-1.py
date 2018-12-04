@@ -19,7 +19,6 @@ print(rnd_num)
 print(np.sort(rnd_num[:24]))
 
 '''
-
 import sys
 
 sys.path.append('..')
@@ -54,6 +53,18 @@ print(data)
 #data.to_csv("BITMEX_xbtusd_4h_2017-01-01_2018-10-01.csv")
 '''
 '''
+data["date_time"] = pd.to_datetime(data["date"])
+data_test=copy.deepcopy(data)
+#print(data_test)
+df = data_test.resample(rule="4h", on='date_time').apply({'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'})
+#print(data_test["high"].resample(rule="4h",how="max",on="date_time"))
+
+df["amount"]=df["volume"]
+print(df)
+df.to_csv("BITMEX_xbtusd_4h_2017-01-01_2018-10-01.csv")
+'''
+
+'''
 from sklearn.model_selection import ParameterGrid
 
 param_grid={"N1":[10,15,20,25,30],"N2":[0.8,0.85,0.9,0.95],"N2-N3":[0.025],"N4":[1.025]}
@@ -71,21 +82,6 @@ c=0
 if not ((a and c) or b):
     print("end")
 '''
-
-# '''
-data["date_time"] = pd.to_datetime(data["date"])
-data_test=copy.deepcopy(data)
-# print(data_test)
-df = data_test.resample(rule="4h", on='date_time').apply({'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last',
-                                                          'volume': 'sum'})
-# print(data_test["high"].resample(rule="4h",how="max",on="date_time"))
-
-df["amount"]=df["volume"]
-print(df)
-df.to_csv("BITMEX_xbtusd_4h_2017-01-01_2018-10-01.csv")
-# '''
-
-
 
 
 
