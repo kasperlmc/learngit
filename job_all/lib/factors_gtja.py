@@ -113,7 +113,6 @@ def decay_linear(df ,period=10):
     return pd.Series(value_list,name="close")
 
 
-
 class Alphas(object):
     def __init__(self, pn_data):
         """
@@ -236,10 +235,10 @@ class Alphas(object):
 
     def alpha040(self):
         data_mid1=copy.deepcopy(self.volume)
-        data_mid1=[0 if x<=y else z for x,y,z in zip(self.close,delay(self.close),data_mid1)]
+        data_mid1=[0.001 if x<=y else z for x,y,z in zip(self.close,delay(self.close),data_mid1)]
         data_mid1=pd.Series(data_mid1,name="value")
         data_mid2=copy.deepcopy(self.volume)
-        data_mid2=[0 if x>y else z for x,y,z in zip(self.close,delay(self.close),data_mid2)]
+        data_mid2=[0.001 if x>y else z for x,y,z in zip(self.close,delay(self.close),data_mid2)]
         data_mid2=pd.Series(data_mid2,name="value")
         return ts_sum(data_mid1,26)/ts_sum(data_mid2,26)
 
@@ -310,14 +309,14 @@ class Alphas(object):
         return data_mid6
 
     def alpha052(self):
-        data_mid1=self.high-delay((self.high+self.low+self.close)/3)
-        data_mid1[data_mid1<0]=0
+        data_mid1 = self.high-delay((self.high+self.low+self.close)/3)
+        data_mid1[data_mid1 < 0] = 0
         data_mid2=delay((self.high+self.low+self.close)/3)-self.low
-        data_mid2[data_mid2<0]=0
-        return ts_sum(data_mid1,26)/ts_sum(data_mid2,26)*100
+        data_mid2[data_mid2 < 0] = 0
+        return ts_sum(data_mid1, 26)/ts_sum(data_mid2, 26)*100
 
     def alpha053(self):
-        data_mid1=ts_count(delay(self.close),self.close,12)
+        data_mid1 = ts_count(delay(self.close), self.close, 12)
         return (data_mid1/12)*100
 
     def alpha055(self):

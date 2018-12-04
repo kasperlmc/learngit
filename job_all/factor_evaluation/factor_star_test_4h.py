@@ -54,7 +54,7 @@ pd.set_option('display.max_columns', None)
 # 显示所有行
 pd.set_option('display.max_rows', None)
 
-slippage = 0.00125
+slippage = 0.002
 
 symbols_close = [x+"_close" for x in ["btcusdt", "ethusdt", "xrpusdt", "eosusdt", "trxusdt"]]
 
@@ -437,7 +437,7 @@ for x in a:
     else:
         alpha_test.append("Alpha.alpha" + str(x))
 
-# alpha_test = ["Alpha.alpha040"]
+alpha_test = ["Alpha.alpha040"]
 print("max")
 stat_ls = []
 for alpha in alpha_test:
@@ -529,7 +529,7 @@ for alpha in alpha_test:
         # df_result["index_ma20"]=df["index_ma20"]
         df_result["date_time"] = pd.to_datetime(df_result["date_time"])
         # print(df_result[["net","asset_diff","buy","asset","date_time"]])
-        result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 1, alpha+"_bitfinex_positive_4h")
+        result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 0, alpha+"_bitfinex_positive_4h")
         result = result+sum_ret_symbol
         result = [trade_times, alpha, win_times]+result
         cols = cols+symbols
