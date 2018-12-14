@@ -503,7 +503,7 @@ if __name__ == '__main__':
     print(errcode,errmsg)
     print(df)
 
-    errcode, errmsg, df = get_exsymbol_kline("BITMEX", ".bxbt", "1h", "2017-01-01", "2018-10-29")
+    errcode, errmsg, df = get_exsymbol_kline("BIAN", "btcusdt", "5m", "2018-10-10", "2018-10-29")
     print(df.head())
     # e_time = time.time()
     # print("total:"+str(e_time-s_time))

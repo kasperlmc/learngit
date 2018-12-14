@@ -37,32 +37,33 @@ for x in a:
 #print(alpha_test)
 #print(alpha_use)
 
-# alpha_test=["Alpha.alpha001"]
+alpha_test = ["Alpha.alpha040"]
 if __name__ == '__main__':
 
     exchange = 'BITFINEX'
-    symbols = ['btcusdt',"ethusdt","xrpusdt","zecusdt","eosusdt","neousdt","ltcusdt","etcusdt","etpusdt","iotusdt"]
-    symbols = ["rrtusdt","xmrusdt","dshusdt","avtusdt","omgusdt","sanusdt","qtmusdt","edousdt","btgusdt","trxusdt",
-               "zrxusdt","tnbusdt","funusdt","mnausdt","sntusdt","gntusdt"]
+    symbols = ["btcusdt", "ethusdt", "xrpusdt", "trxusdt", "eosusdt", "zecusdt", "ltcusdt",
+               "etcusdt", "etpusdt", "iotusdt", "rrtusdt", "xmrusdt", "dshusdt", "avtusdt",
+               "omgusdt", "sanusdt", "qtmusdt", "edousdt", "btgusdt", "neousdt", "zrxusdt",
+               "tnbusdt", "funusdt", "mnausdt", "sntusdt", "gntusdt"]
 
     # 因子是price_volume, 有一个参数corr_window, 参数取值10/25/50
     # 能形成三组因子时间序列：price_volume_10/25/50, 存入本地和数据库
-    #factor_name = 'price_volume'
-    #param_grid = {'corr_window': [10, 25, 50]}
-    #param_lst = list(ParameterGrid(param_grid))
+    # factor_name = 'price_volume'
+    # param_grid = {'corr_window': [10, 25, 50]}
+    # param_lst = list(ParameterGrid(param_grid))
     for symbol in symbols:
         for factor in alpha_test:
-            #col_name = build_col_name(factor_name, param)
+            # col_name = build_col_name(factor_name, param)
             try:
-                dataf = read_data(exchange, symbol, '1h', "2017-01-01", "2018-10-01")
+                dataf = read_data(exchange, symbol, '4h', "2017-01-01", "2018-10-01")
                 print(symbol)
                 print(dataf.head())
                 Alpha = Alphas(dataf)
-                col_name=factor
-                df_m=copy.deepcopy(dataf)
+                col_name = factor
+                df_m = copy.deepcopy(dataf)
                 df_m[col_name] = eval(factor)()
-                factor_name=factor + "_" + "gtja1h"
-                fname = '../factor_writedb/multiple_subject/' + symbol + '_' + factor_name + '.csv'
+                factor_name = factor + "_" + "gtja4h"
+                fname = '/Users/wuyong/alldata/factor_writedb/factor_stra_4h/' + symbol + '_' + factor_name + '.csv'
                 write_db(df_m, fname, False)
                 print('write' + fname + '...')
             except AttributeError:
