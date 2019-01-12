@@ -56,7 +56,9 @@ pd.set_option('display.max_rows', None)
 
 slippage = 0.002
 
-symbols_close = [x+"_close" for x in ["btcusdt", "ethusdt", "xrpusdt", "eosusdt", "trxusdt"]]
+symbols_close = [x+"_close" for x in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc",
+                                      "tusdbtc", "bchabcbtc", "bchsvbtc",
+                                      "btgbtc", "dashbtc"]]
 
 
 @tail_call_optimized
@@ -92,15 +94,19 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
         return cash_list, asset_list, buy_list, btcnum_list, close_list, max_value_list, win_times
 
     df_last_min = df[symbols].ix[n-1]
-    min_idx = df_last_min.idxmax()
-    max_value = df_last_min.max()
+    df_last_min.dropna(inplace=True)
+    df_last_min.sort_values(inplace=True)
+    df_last_min = (df_last_min - df_last_min.median()).abs()
+    min_idx = df_last_min.idxmin()
+    max_value = df_last_min.min()
     max_value_list.append(max_value)
     # print(df_last_min)
     # print(max_value,min_idx)
     df_now_all = df.ix[n]
-    # print(df_now_all["date_time"],asset_list[-1],buy_list[-1],min_idx)
 
-    if min_idx in ["btcusdt", "ethusdt", "xrpusdt", "eosusdt", "trxusdt"]:
+    if min_idx in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc",
+                   "bchabcbtc", "bchsvbtc", "btgbtc",
+                   "dashbtc"]:
         if buy_list[-1] == min_idx:
             if df_now_all[min_idx + "_close"]*0 != 0:
                 print("数据缺失_c", df_now_all[min_idx + "_close"])
@@ -208,14 +214,6 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
 
                 if n > 1:
                     df_last_all = df.ix[n - 1]
-                    # df_close = df[symbols_close].ix[n - 2:n - 1]
-                    # df_close_diff = df_close.diff()
-                    # df_close_diff = df_close_diff.ix[n - 1].values
-                    # print(df_close_diff)
-                    # print(len(df_close_diff[df_close_diff > 0]))
-                    # print(len(df_close_diff[df_close_diff > -9999999]))
-                    # print(len(df_close_diff[df_close_diff>0]))
-                    # length_diff = len(df_close_diff[df_close_diff > -9999999])
                     if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"]:
                         posittion = 1
                     else:
@@ -391,7 +389,7 @@ def summary_net(net_df, plot_in_loops,alpha):
         # net_df["index_ma5"]=net_df["index_ma5"].values/10
         # net_df["index_ma20"]=net_df["index_ma20"].values/10
 
-        fpath = mkfpath('/Users/wuyong/alldata/factor_writedb/factor_stra/', param_str + '.png')
+        fpath = mkfpath('temp/', param_str + '.png')
 
         fig, ax = plt.subplots(2)
         net_df.plot(x='date_time', y=['index', 'net'], title=param_str, grid=True, ax=ax[0])
@@ -407,10 +405,10 @@ def summary_net(net_df, plot_in_loops,alpha):
     return result, cols
 
 
-symbols = ["btcusdt", "ethusdt", "xrpusdt", "trxusdt", "eosusdt", "zecusdt", "ltcusdt",
-           "etcusdt", "bchusdt", "iotausdt", "adausdt", "xmrusdt", "dashusdt", "htusdt",
-           "omgusdt", "wavesusdt", "nanousdt", "btmusdt", "elausdt", "ontusdt", "iostusdt",
-           "qtumusdt","dtausdt", "zilusdt", "elfusdt", "gntusdt"]
+symbols = ["ethbtc", "xrpbtc", "mdabtc", "eosbtc", "xlmbtc", "tusdbtc", "ltcbtc",
+           "stratbtc", "trxbtc", "adabtc", "iotabtc", "xmrbtc", "bnbbtc", "dashbtc",
+           "xembtc", "etcbtc", "neobtc", "ontbtc", "zecbtc", "wavesbtc", "btgbtc",
+           "vetbtc", "qtumbtc", "omgbtc", "zrxbtc", "gvtbtc", "bchabcbtc", "bchsvbtc"]
 
 '''
 alpha_test=["Alpha.alpha003","Alpha.alpha007","Alpha.alpha009","Alpha.alpha014","Alpha.alpha018","Alpha.alpha019",
@@ -437,32 +435,40 @@ for x in a:
     else:
         alpha_test.append("Alpha.alpha" + str(x))
 
-alpha_test = alpha_test
-# alpha_test = ["Alpha.alpha043"]
-print("max")
+# alpha_test = ["Alpha.alpha052","Alpha.alpha058","Alpha.alpha067","Alpha.alpha069","Alpha.alpha110","Alpha.alpha135"]
+# alpha_test = ["Alpha.alpha069"]
+print("min")
 stat_ls = []
 for alpha in alpha_test:
     # 计算出每个alpha的策略指标
     try:
         for symbol in symbols:
-            factor_name = alpha+"_gtja4h"
-            data = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/' + symbol + '_HUOBI_' + factor_name + '.csv', index_col=0)
+            data = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + symbol + "_" + alpha + "_gtja4h" + '.csv', index_col=0)
+            data = data[data["tickid"] > 1530093600]
+            data.drop_duplicates(subset="tickid", keep="last", inplace=True)
 
-            if symbol == "btcusdt":
+            if symbol == "ethbtc":
                 df = pd.DataFrame({symbol: data[alpha].values, symbol+"_close": data["close"].values, symbol+"_open":data["open"].values}, index=data["date"].values)
             else:
                 df_1 = pd.DataFrame({symbol: data[alpha].values, symbol+"_close": data["close"].values, symbol+"_open":data["open"].values}, index=data["date"].values)
-                df = pd.concat([df, df_1], axis=1)
+                df = df.merge(df_1, how="left", left_index=True, right_index=True)
 
-        # print(df.head(10))
+        # print(df.columns)
+        # print(df.head())
+        # print(df.tail())
         # print(len(df))
+        # df.dropna(inplace=True)
+        # print(df.ix["2018-03-01 00:00:00":])
+        # df=df.ix["2018-03-01 00:00:00":]
         df["index"] = range(len(df))
         df["date_time"] = df.index
         df.index = df["index"]
         print(alpha)
         # 计算出资产组合对比指标
-        dataf = pd.read_csv("/Users/wuyong/alldata/original_data/BITMEX_.bxbt_4h_2018-06-20_2018-12-26.csv")
-        dataf = dataf.head(1126)
+        dataf = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + "tusdbtc" + "_" + alpha + "_gtja4h" + '.csv', index_col=0)
+        # print(dataf.tail())
+        dataf = dataf[dataf["tickid"] > 1530093600]
+        dataf.drop_duplicates(subset="tickid", keep="last", inplace=True)
         index_values = list(dataf["close"].values)
         # print(index_values)
         df["index"] = np.array(index_values)
@@ -470,7 +476,7 @@ for alpha in alpha_test:
         # df["index"] = dataf["close"]
         # print(df["index"])
         combine_value = pd.Series(np.zeros(len(df)), name="mid_value")
-        for close in ["ethusdt_close", "btcusdt_close", "xrpusdt_close", "eosusdt_close", "trxusdt_close"]:
+        for close in symbols_close:
             df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
             combine_value[df[close] > df[close + str(25)]] = combine_value+1
         df["strength"] = combine_value
@@ -490,13 +496,18 @@ for alpha in alpha_test:
         # logger.setLevel(logging.INFO)  # 设置从那个等级开始提示
 
         cash_list, asset_list, buy_list, btcnum_list, close_list, max_value_list, win_times = multiple_factor(df, cash_list=[10000], asset_list=[10000], buy_list=[np.nan], btcnum_list=[0], n=1, close_list=[0], max_value_list=[0], win_times=0, price_list=[])
-        df_result=pd.DataFrame({"cash": cash_list, "asset": asset_list, "buy": buy_list, "coinnum": btcnum_list, "close": close_list, "max_value":max_value_list}, index=df["date_time"])
+        df_result=pd.DataFrame({"cash": cash_list, "asset": asset_list, "buy": buy_list, "coinnum": btcnum_list, "close": close_list, "max_value": max_value_list}, index=df["date_time"])
         df_result["asset_diff"] = df_result["asset"].diff()
+        df_result["date_time"] = pd.to_datetime(df_result.index)
+        df_result_oct = df_result[df_result["date_time"] > pd.to_datetime("2018-10-01 00:00:00")]
+        # print(df_result_oct.head())
+        trade_times_oct = df_result_oct["coinnum"].diff().values
+        trade_times_oct = len(np.where(trade_times_oct != 0)[0])-1
         trade_times = df_result["coinnum"].diff().values
         trade_times = len(np.where(trade_times != 0)[0])-1
         df_result["date_time"] = df_result.index
         df_result.index = range(len(df_result))
-        # print(df_result.tail())
+        print(df_result.tail())
 
         # 计算出各个币对上的具体盈亏数额
         sum_ret_symbol = []
@@ -527,18 +538,19 @@ for alpha in alpha_test:
         # df_result["index_ma20"]=df["index_ma20"]
         df_result["date_time"] = pd.to_datetime(df_result["date_time"])
         # print(df_result[["net","asset_diff","buy","asset","date_time"]])
-        result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 1, alpha+"_HUOBI_positive_4h")
+        result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 0, alpha+"_BIAN_allfactor_4h")
         result = result+sum_ret_symbol
-        result = [trade_times, alpha, win_times]+result
+        result = [trade_times, trade_times_oct, alpha, win_times]+result
         cols = cols+symbols
-        cols = ["trade_times", "alpha", "win_times"]+cols
+        cols = ["trade_times", "trade_times_oct", "alpha", "win_times"]+cols
         stat_ls.append(result)
         # df_last=pd.DataFrame(stat_ls, columns=cols)
         # print(df_last)
-    except FileNotFoundError as e:
-        pass
+    except (FileNotFoundError, TypeError) as e:
+        print(e)
 
 df_last = pd.DataFrame(stat_ls, columns=cols)
+df_last = df_last.sort_values(by="ret_ratio", ascending=False)
 print(df_last)
 
 

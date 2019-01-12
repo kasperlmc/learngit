@@ -9,12 +9,22 @@ from datetime import datetime
 # 显示所有行
 pd.set_option('display.max_rows', None)
 
-# symbol = "ethusdt"
-#
-# exchange = 'BITFINEX'
-#
-# dataf = read_data(exchange, symbol, '1h', "2017-01-01", "2018-10-01")
-#
+symbol = "btcusdt"
+
+exchange = 'BITFINEX'
+
+dataf = read_data(exchange, symbol, '1h', "2017-01-01", "2018-12-21")
+print(dataf.head())
+print(dataf.tail())
+dataf["date_time"] = pd.to_datetime(dataf["date"])
+df = dataf.resample(rule="4h", on='date_time',label="left").apply(
+                {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last',
+                 'volume': 'sum', "amount": "sum"})
+df["date"] = df.index
+df.index = range(len(df))
+print(df.head())
+print(df.tail())
+# df.to_csv("/Users/wuyong/alldata/original_data/BITMEX_.bxbt_4h_2017-01-01_2018-12-21.csv")
 # above = dataf.iloc[:350]
 # # print(above.tail())
 # below = dataf.iloc[350:]
@@ -42,34 +52,29 @@ pd.set_option('display.max_rows', None)
 # newData2.to_csv("/Users/wuyong/alldata/original_data/BITFINEX_ethusdt_1h_2017-01-01_2018-10-01.csv")
 
 
-# symbol = ".bxbt"
+# # symbol = ".bxbt"
 #
-# # exchange = 'BITMEX'
+# exchange = 'BITMEX'
 # symbols = ["btcusdt", "ethusdt", "xrpusdt", "trxusdt", "eosusdt", "zecusdt", "ltcusdt",
 #            "etcusdt", "etpusdt", "iotusdt", "rrtusdt", "xmrusdt", "dshusdt", "avtusdt",
 #            "omgusdt", "sanusdt", "qtmusdt", "edousdt", "btgusdt", "neousdt", "zrxusdt",
 #            "tnbusdt", "funusdt", "mnausdt", "sntusdt", "gntusdt"]
 #
+# # symbols = ["btcusdt"]
+#
 # for i in range(len(symbols)):
-#     dataf = read_data("BITFINEX", symbols[i], '1h', "2017-01-01", "2018-10-01")
+#     dataf = read_data("BITFINEX", symbols[i], '1h', "2017-01-01", "2018-12-21")
 #     print(dataf.head())
 #     print(dataf.tail())
-#     # # print(dataf.head(1450))
-#     # dataf = dataf.iloc[1438:]
-#     # dataf["tickid"] = dataf["tickid"].values+60
-#     # dataf.index = range(len(dataf))
-#     # print(dataf.head(20))
-#     # print(dataf.tail())
-#     # dataf.to_csv("/Users/wuyong/alldata/original_data/trades_bian_btcusdt_m_1.csv")
 #     dataf["date_time"] = pd.to_datetime(dataf["date"])
 #     df = dataf.resample(rule="4h", on='date_time',label="left").apply(
 #                 {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last',
-#                  'volume': 'sum',"amount":"sum"})
+#                  'volume': 'sum', "amount": "sum"})
 #     df["date"] = df.index
 #     df.index = range(len(df))
 #     print(df.head())
 #     print(df.tail())
-#     df.to_csv("/Users/wuyong/alldata/original_data/BITFINEX_"+symbols[i]+"_4h_2017-01-01_2018-10-01.csv")
+    # df.to_csv("/Users/wuyong/alldata/original_data/BITFINEX_"+symbols[i]+"_4h_2017-01-01_2018-12-21.csv")
 # df["index"] = range(len(df))
 # df["date"] = df.index
 # df.index = df["index"]

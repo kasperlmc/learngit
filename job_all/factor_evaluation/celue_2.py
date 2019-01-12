@@ -65,19 +65,22 @@ slippage = 0.002
 data_zb = pd.read_csv("/Users/wuyong/alldata/original_data/trades_bian_btcusdt_s_1.csv",index_col=0)
 data_zb["tickid"] = data_zb["dealtime"]
 data_zb["close"] = data_zb["price"]
-print(data_zb.head(30))
+# print(data_zb.head(30))
 # print(len(data_zb))
 data_k = pd.read_csv("/Users/wuyong/alldata/original_data/trades_bian_btcusdt_m_1.csv",index_col=0)
-print(data_k.head(20))
-data_k["growth"] = data_k["close"]-data_k["open"]
-data_k["growth"] = data_k["growth"].apply(lambda x: 1 if x > 0 else 0)
+# print(data_k.head(20))
+data_k["ma7"] = ta.MA(data_k["close"].values, 7)
+data_k["ma30"] = ta.MA(data_k["close"].values, 30)
+data_k["ma90"] = ta.MA(data_k["close"].values, 90)
 # print(len(data_k))
+# print(data_k.iloc[200:300])
+# print(data_k.head())
 # print(type(data_k["date"].values[0]))
-#
-# data_k_all = data_k.iloc[18108:18141]
-# data_k_price = data_k_all[["open","high","low","close"]]
-#
-#
+
+# data_k_all = data_k.iloc[200:300]
+# data_k_price = data_k_all[["open","high","low","close", "ma90"]]
+# print(data_k_price)
+
 # # def date_to_num(dates):
 # #     num_time = []
 # #     for date in dates:
@@ -89,15 +92,72 @@ data_k["growth"] = data_k["growth"].apply(lambda x: 1 if x > 0 else 0)
 # #
 # # num_list = date_to_num(data_k.head(50)["date"].values)
 # # print(num_list)
-# candleData = np.column_stack([list(range(len(data_k_price))), data_k_price])
-# print(candleData)
-# fig = plt.figure(figsize=(10, 6))
+# candleData = np.column_stack([list(range(len(data_k_price))), data_k_price[["open","high","low","close"]]])
+# fig = plt.figure(figsize=(20, 12))
 # ax = fig.add_axes([0.1, 0.3, 0.8, 0.6])
 # mpf.candlestick_ohlc(ax, candleData, width=0.5, colorup='r', colordown='b')
+# ax.plot(data_k_all["date"].values,data_k_price["ma90"],label="ma90")
+# buy_price = data_k_price["high"].values[50]
+# print(buy_price)
+# ax.annotate('Bad News!',(data_k_all["date"].values[50],buy_price),xytext=(0.8, 0.9), textcoords='axes fraction',arrowprops = dict(facecolor='grey',color='grey'))
 # plt.grid(True)
 # plt.xticks(list(range(len(data_k_price))),list(data_k_all["date"].values))
 # plt.xticks(rotation=85)
+# plt.tick_params(labelsize=10)
+# plt.legend()
 # plt.show()
+
+
+date_list = [1543606680,1543607220,1543607880,1543608480,1543609200]
+price_list = [4050,4047,4037,4030,4046]
+tuple_list = [(x,y) for x,y in zip(date_list,price_list)]
+print(tuple_list)
+
+
+def save_trade_fig(tuple_list, df_k):
+    for i in range(len(tuple_list)):
+        buy_time,buy_price = tuple_list[i]
+        data_k = df_k[(df_k["tickid"] >= buy_time-80*60) & (df_k["tickid"] <= buy_time+30*60)]
+        candleData = np.column_stack([list(range(len(data_k))), data_k[["open", "high", "low", "close"]]])
+        fig = plt.figure(figsize=(20, 12))
+        ax = fig.add_axes([0.1, 0.3, 0.8, 0.6])
+        mpf.candlestick_ohlc(ax, candleData, width=0.5, colorup='r', colordown='b')
+        ax.plot(data_k["date"].values, data_k["ma7"], label="ma7")
+        ax.plot(data_k["date"].values, data_k["ma30"], label="ma30")
+        ax.plot(data_k["date"].values, data_k["ma90"], label="ma90")
+        print(buy_price)
+        ax.annotate('buy_point', (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(buy_time)), buy_price), xytext=(0.8, 0.9), textcoords='axes fraction', arrowprops=dict(facecolor='grey', color='grey'))
+        plt.grid(True)
+        plt.xticks(list(range(len(data_k))), list(data_k["date"].values))
+        plt.xticks(rotation=85)
+        plt.tick_params(labelsize=10)
+        plt.legend()
+        plt.savefig("/Users/wuyong/alldata/original_data/trade_fig_save/fig_save_112/"+"trade_"+str(i)+".png")
+
+
+
+
+save_trade_fig(tuple_list,data_k)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # mat_wdyx = data_k_test.as_matrix()

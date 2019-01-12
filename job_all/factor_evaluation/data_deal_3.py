@@ -36,12 +36,12 @@ def timestamp_to_datetime(timestamp):
 # data_last.to_csv("/Users/wuyong/alldata/original_data/trades_BIAN_ethusdt_s_all.csv")
 
 
-symbol = "xrpusdt"
-
-exchange = 'BIAN'
-
-dataf = read_data(exchange, symbol, '1m', "2017-08-16", "2018-12-21")
-dataf["tickid"] = dataf["tickid"]+60
+# symbol = "xrpusdt"
+#
+# exchange = 'BIAN'
+#
+# dataf = read_data(exchange, symbol, '1m', "2017-08-16", "2018-12-21")
+# dataf["tickid"] = dataf["tickid"]+60
 # dataf = dataf.iloc[2:]
 # dataf["date_time"] = pd.to_datetime(dataf["date"])
 # df = dataf.resample(rule="3min", on='date_time',label="left", closed="left").apply(
@@ -68,7 +68,7 @@ dataf["tickid"] = dataf["tickid"]+60
 #
 #
 # # print(df.loc["2018-12-05 10:36:00"])
-dataf.to_csv("/Users/wuyong/alldata/original_data/trades_bian_xrpusdt_m_all.csv")
+# dataf.to_csv("/Users/wuyong/alldata/original_data/trades_bian_xrpusdt_m_all.csv")
 #
 #
 # # data_test = pd.read_csv("/Users/wuyong/alldata/original_data/trades_bian_xrpusdt_5m_2.csv").tail(100)
@@ -90,10 +90,34 @@ dataf.to_csv("/Users/wuyong/alldata/original_data/trades_bian_xrpusdt_m_all.csv"
 # plt.show()
 
 
+# data_test = pd.read_csv("/Users/wuyong/alldata/original_data/BITMEX_.bxbt_4h_2018-06-20_2018-12-26.csv", index_col=0)
+# data_test = data_test.iloc[19:]
+# data_test["date_time"] = pd.to_datetime(data_test["date"])
+# data_test = data_test.resample(rule="4h", on="date_time",label="left", closed="left").apply({'close': 'last'})
+# data_test.to_csv("/Users/wuyong/alldata/original_data/BITMEX_.bxbt_4h_2018-06-20_2018-12-26.csv")
+# print(data_test.head())
+# print(len(data_test.iloc[:1126]))
 
 
+data_3mon_all = pd.read_csv("/Users/wuyong/alldata/original_data/trades_BIAN_btcusdt_s_all.csv", index_col=0)
+data_3mon_all["date"] = pd.to_datetime(data_3mon_all["dealtime"], unit="s")
+data_3mon_all.index = data_3mon_all["date"].values
+print(data_3mon_all.head(40))
+data_3mon_all_re = data_3mon_all.resample(rule="30s", on='date', label="left", closed="left").apply(
+                {"price": "last", "amount": "sum", "date": "first", "dealtime": "first"})
+data_3mon_all_re["close"] = data_3mon_all_re["price"]
+data_3mon_all_re["open"] = data_3mon_all.resample(rule="30s", on='date', label="left", closed="left").apply(
+                {"price": "first"})
+data_3mon_all_re["high"] = data_3mon_all.resample(rule="30s", on='date', label="left", closed="left").apply(
+                {"price": "max"})
+data_3mon_all_re["low"] = data_3mon_all.resample(rule="30s", on='date', label="left", closed="left").apply(
+                {"price": "min"})
 
-
+data_3mon_all_re["tickid"] = data_3mon_all_re["dealtime"]
+data_3mon_all_re["tickid"] = data_3mon_all_re["tickid"]+30
+data_3mon_all_re.index = range(len(data_3mon_all_re))
+data_3mon_all_re.to_csv("/Users/wuyong/alldata/original_data/trades_BIAN_btcusdt_30s_all.csv")
+print(data_3mon_all_re.head(10))
 
 
 

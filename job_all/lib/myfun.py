@@ -4,9 +4,9 @@ import os
 sys.path.append(os.getcwd())
 
 try:
-    from .dataapi import get_exsymbol_kline
+    from .dataapi import get_huobi_ontime_kline
 except:
-    from dataapi import get_exsymbol_kline
+    from dataapi import get_huobi_ontime_kline
 
 import numpy as np
 import pandas as pd
@@ -42,7 +42,7 @@ def read_data(exchange, symbol, period, start_day, end_day):
 
     # 如果没有文件，从数据库中读
     if not os.path.exists(fpath):
-        ohlc = get_exsymbol_kline(exchange, symbol, period, start_day, end_day)[2]
+        ohlc = get_huobi_ontime_kline(symbol, period, start_day, end_day)[2]
         # 写入数据
         if not ohlc.empty:
             ohlc.to_csv(fpath)
