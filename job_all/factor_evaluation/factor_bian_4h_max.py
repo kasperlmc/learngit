@@ -43,11 +43,12 @@ sys.path.append('..')
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from lib.factors_gtja import *
+from lib.factors_gtja_two import *
 from lib.myfun import *
 import os
 import talib as ta
 import logging
+from lib.draw_trade_pic import save_trade_fig
 
 # 显示所有列
 pd.set_option('display.max_columns', None)
@@ -56,9 +57,12 @@ pd.set_option('display.max_rows', None)
 
 slippage = 0.002
 
-symbols_close = [x+"_close" for x in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc",
-                                      "tusdbtc", "bchabcbtc", "bchsvbtc",
-                                      "btgbtc", "dashbtc"]]
+symbols = ["ethbtc", "xrpbtc", "mdabtc", "eosbtc", "xlmbtc", "tusdbtc", "ltcbtc",
+           "stratbtc", "trxbtc", "adabtc", "iotabtc", "xmrbtc", "bnbbtc", "dashbtc",
+           "xembtc", "etcbtc", "neobtc", "ontbtc", "zecbtc", "wavesbtc", "btgbtc",
+           "vetbtc", "qtumbtc", "omgbtc", "zrxbtc", "gvtbtc", "bchabcbtc", "bchsvbtc"]
+aim_symbols = ["ethbtc", "eosbtc", "xrpbtc", "trxbtc","tusdbtc", "bchabcbtc", "bchsvbtc", "ontbtc", "ltcbtc", "adabtc", "bnbbtc"]
+symbols_close = [x+"_close" for x in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc", "bchabcbtc", "bchsvbtc", "ontbtc", "ltcbtc", "adabtc", "bnbbtc"]]
 
 
 @tail_call_optimized
@@ -94,20 +98,16 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
         return cash_list, asset_list, buy_list, btcnum_list, close_list, max_value_list, win_times
 
     df_last_min = df[symbols].ix[n-1]
-    df_last_min.dropna(inplace=True)
-    df_last_min.sort_values(inplace=True)
-    df_last_min = (df_last_min - df_last_min.median()).abs()
-    min_idx = df_last_min.idxmin()
-    max_value = df_last_min.min()
+    # df_last_min.dropna(inplace=True)
+    # df_last_min.sort_values(inplace=True)
+    # df_last_min = (df_last_min - df_last_min.median()).abs()
+    min_idx = df_last_min.idxmax()
+    max_value = df_last_min.max()
     max_value_list.append(max_value)
-    # print(df_last_min)
-    # print(max_value,min_idx)
     df_now_all = df.ix[n]
 
-    if min_idx in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc",
-                   "bchabcbtc", "bchsvbtc", "btgbtc",
-                   "dashbtc"]:
-        if buy_list[-1] == min_idx:
+    if min_idx in aim_symbols:
+        if buy_list[-1] == min_idx and posittion == 1:
             if df_now_all[min_idx + "_close"]*0 != 0:
                 print("数据缺失_c", df_now_all[min_idx + "_close"])
                 cash_list.append(cash_list[-1])
@@ -147,15 +147,19 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                     buy_list.append(buy_list[-1])
                     btcnum_list.append(btcnum_list[-1])
                     close_list.append(close_list[-1])
+
                     # logger.info("数据缺失，不卖%s，不买%s" % (buy_list[-1],min_idx))
                     # logger.info("此时的资产总值为%s" % asset_list[-1])
                     # logger.info("此时的最大因子值为%s" % max_value)
+
                     return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                            max_value_list, posittion, win_times, price_list)
                 else:
                     # print("定位",n)
+
                     # logger.info(df.ix[n].date_time)
                     # logger.info("卖出%s，卖价为%s" % (buy_list[-1], sell_price))
+
                     sell_amount = btcnum_list[-1]
                     cash_get = sell_price * sell_amount
                     if sell_price > price_list[-1] and sell_amount > 0:
@@ -177,7 +181,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                     # print(len(df_close_diff[df_close_diff > -9999999]))
                     # print(len(df_close_diff[df_close_diff>0]))
                     # length_diff = len(df_close_diff[df_close_diff > -9999999])
-                    if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"]:
+                    if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"] and (df_last_all["position"] == 1 or min_idx == "tusdbtc" or True):
                         posittion = 1
                     else:
                         posittion = 0
@@ -188,20 +192,26 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                         buy_list.append(np.nan)
                         btcnum_list.append(0)
                         close_list.append(0)
+
                         # logger.info("买价缺失，不买%s" % min_idx)
                         # logger.info("此时的资产总值为%s" % asset_list[-1])
                         # logger.info("此时的最大因子值为%s" % max_value)
+
                         return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                                max_value_list, posittion, win_times, price_list)
                     else:
+
                         # logger.info("买入%s,买入价格为%s,买入仓位为%s" % (min_idx, buy_price, posittion))
+
                         buy_amount = ((cash_get + cash_list[-1]) * posittion) / buy_price
                         cash_now = (cash_get + cash_list[-1]) * (1 - posittion)
                         cash_list.append(cash_now)
                         asset_list.append(buy_amount * df_now_all[min_idx + "_close"] + cash_now)
                         # asset_chg.append(buy_amount*buy_price)
+
                         # logger.info("此时的资产总值为%s" % asset_list[-1])
                         # logger.info("此时的最大因子值为%s" % max_value)
+
                         buy_list.append(min_idx)
                         btcnum_list.append(buy_amount)
                         close_list.append(df_now_all[min_idx + "_close"])
@@ -214,7 +224,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
 
                 if n > 1:
                     df_last_all = df.ix[n - 1]
-                    if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"]:
+                    if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"] and (df_last_all["position"] == 1 or min_idx == "tusdbtc" or True):
                         posittion = 1
                     else:
                         posittion = 0
@@ -308,6 +318,10 @@ def month_profit(net_df):
 
     month_ret = pd.DataFrame(ret, columns=['date_time', 'long_return'])
     return month_ret
+
+
+def ts_sum(df, window=10):
+    return df.rolling(window).sum()
 
 
 def annual_ret(net):
@@ -405,11 +419,6 @@ def summary_net(net_df, plot_in_loops,alpha):
     return result, cols
 
 
-symbols = ["ethbtc", "xrpbtc", "mdabtc", "eosbtc", "xlmbtc", "tusdbtc", "ltcbtc",
-           "stratbtc", "trxbtc", "adabtc", "iotabtc", "xmrbtc", "bnbbtc", "dashbtc",
-           "xembtc", "etcbtc", "neobtc", "ontbtc", "zecbtc", "wavesbtc", "btgbtc",
-           "vetbtc", "qtumbtc", "omgbtc", "zrxbtc", "gvtbtc", "bchabcbtc", "bchsvbtc"]
-
 '''
 alpha_test=["Alpha.alpha003","Alpha.alpha007","Alpha.alpha009","Alpha.alpha014","Alpha.alpha018","Alpha.alpha019",
             "Alpha.alpha020","Alpha.alpha024","Alpha.alpha028","Alpha.alpha031","Alpha.alpha037","Alpha.alpha038",
@@ -435,9 +444,8 @@ for x in a:
     else:
         alpha_test.append("Alpha.alpha" + str(x))
 
-# alpha_test = ["Alpha.alpha052","Alpha.alpha058","Alpha.alpha067","Alpha.alpha069","Alpha.alpha110","Alpha.alpha135"]
-# alpha_test = ["Alpha.alpha069"]
-print("mid")
+# alpha_test = ["Alpha.alpha052","Alpha.alpha058","Alpha.alpha067","Alpha.alpha069","Alpha.alpha110","Alpha.alpha096"]
+# alpha_test = ["Alpha.alpha052"]
 stat_ls = []
 for alpha in alpha_test:
     # 计算出每个alpha的策略指标
@@ -449,13 +457,14 @@ for alpha in alpha_test:
 
             if symbol == "ethbtc":
                 df = pd.DataFrame({symbol: data[alpha].values, symbol+"_close": data["close"].values, symbol+"_open":data["open"].values, "tickid": data["tickid"].values}, index=data["date"].values)
+                # print(df)
             else:
                 df_1 = pd.DataFrame({symbol: data[alpha].values, symbol+"_close": data["close"].values, symbol+"_open":data["open"].values}, index=data["date"].values)
                 df = df.merge(df_1, how="left", left_index=True, right_index=True)
 
-        # print(df.columns)
         df["date_time"] = df.index
         data_day = pd.read_csv("/Users/wuyong/alldata/original_data/day_position.csv", index_col=0)
+        data_day["tickid"] = data_day["tickid"]+86400
         df = df.merge(data_day, how="left", on="tickid")
         df["position"] = df["position"].fillna(method="ffill")
         # print(df[["position", "ethbtc"]])
@@ -497,7 +506,7 @@ for alpha in alpha_test:
         # logger.addHandler(sh)  # logger添加标准输出流（std out）
         # logger.setLevel(logging.INFO)  # 设置从那个等级开始提示
 
-        cash_list, asset_list, buy_list, btcnum_list, close_list, max_value_list, win_times = multiple_factor(df, cash_list=[10000], asset_list=[10000], buy_list=[np.nan], btcnum_list=[0], n=1, close_list=[0], max_value_list=[0], win_times=0, price_list=[])
+        cash_list, asset_list, buy_list, btcnum_list, close_list, max_value_list, win_times = multiple_factor(df, cash_list=[10000], asset_list=[10000], buy_list=[np.nan], btcnum_list=[0], n=1, close_list=[0], max_value_list=[0], posittion=0,win_times=0, price_list=[])
         df_result=pd.DataFrame({"cash": cash_list, "asset": asset_list, "buy": buy_list, "coinnum": btcnum_list, "close": close_list, "max_value": max_value_list}, index=df["date_time"])
         df_result["asset_diff"] = df_result["asset"].diff()
         df_result["date_time"] = pd.to_datetime(df_result.index)
@@ -509,9 +518,7 @@ for alpha in alpha_test:
         trade_times = len(np.where(trade_times != 0)[0])-1
         df_result["date_time"] = df_result.index
         df_result.index = range(len(df_result))
-        print(df_result.head())
         print(df_result.tail())
-        print(len(df_result["asset"].dropna()))
 
         # 计算出各个币对上的具体盈亏数额
         sum_ret_symbol = []
@@ -555,15 +562,61 @@ for alpha in alpha_test:
 
 df_last = pd.DataFrame(stat_ls, columns=cols)
 df_last = df_last.sort_values(by="ret_ratio", ascending=False)
+print("max")
+print("加市场过滤器")
 print(df_last)
 
-
-
-
-
-
-
-
+# data_k = pd.read_csv("/Users/wuyong/alldata/original_data/btcusdt_day_k.csv", index_col=0)
+#
+#
+# df_result_day = pd.DataFrame({"asset": asset_list, "tickid": df["tickid"].values})
+#
+# data_k = data_k.merge(df_result_day, on="tickid", how="left")
+# data_k["asset"].values[0] = 10000
+# data_k.fillna(method="ffill", inplace=True)
+# # print(data_k.head(100))
+# data_k["ma20"] = ta.EMA(data_k["close"].values, 20)
+# data_k["ma60"] = ta.EMA(data_k["close"].values, 60)
+# data_k["ma120"] = ta.EMA(data_k["close"].values, 120)
+# data_k["ma20_dif"] = data_k["ma20"].diff()
+# data_k["kongtou_pailie"] = [1 if (x < y) and (y < z) and (h <= x or True) else 0 for x, y, z, h in zip(data_k["ma20"].values, data_k["ma60"].values, data_k["ma120"].values, data_k["high"].values)]
+# data_k["kongtou_sum"] = ts_sum(data_k["kongtou_pailie"], window=15)
+# # print(data_k.tail())
+#
+# data_celue = data_k[["high", "ma20_dif", "kongtou_sum", "tickid"]]
+#
+#
+# def xingtai_celue(data_celue):
+#     buyprice_list = np.zeros(len(data_celue))
+#     position_list = np.zeros(len(data_celue))
+#     date_list = np.zeros(len(data_celue))
+#     date_list[0] = data_celue[0][3]
+#     kt_pailie = 0
+#     buy_time = 0
+#     for n in range(1, len(data_celue)):
+#         date_list[n] = data_celue[n][3]
+#         if data_celue[n][2] > 5 and n-buy_time > 15 and data_celue[n][1] < 0:
+#             kt_pailie = 1
+#             buy_time = n
+#
+#         if kt_pailie == 1 and data_celue[n][1] > 0:
+#             kt_pailie = 0
+#             position_list[n] = 1
+#             buyprice_list[n] = data_celue[n][0]
+#     return buyprice_list, position_list, date_list
+#
+#
+# buyprice_list, position_list, date_list = xingtai_celue(data_celue.values)
+# df_result = pd.DataFrame({"tickid": date_list, "buy_price": buyprice_list, "position": position_list})
+#
+#
+# df_result = df_result[df_result["position"] == 1]
+# buy_time_list = df_result["tickid"].values
+# buy_price_list = df_result["buy_price"].values
+# tuple_list = [(x, y) for x, y in zip(buy_time_list, buy_price_list)]
+# print(tuple_list)
+# print(len(tuple_list))
+# save_trade_fig(tuple_list, data_k, "btcmarket_xt", "btc_xingtai_asset", 86400)
 
 
 

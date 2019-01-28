@@ -584,25 +584,32 @@ if __name__ == '__main__':
 
     errcode, errmsg, result = get_exsymbol("BIAN")
     btc_list = [x for x in result if x[-3:] == "btc"]
+    symbols = ["ethbtc", "xrpbtc", "mdabtc", "eosbtc", "xlmbtc", "tusdbtc", "ltcbtc",
+               "stratbtc", "trxbtc", "adabtc", "iotabtc", "xmrbtc", "bnbbtc", "dashbtc",
+               "xembtc", "etcbtc", "neobtc", "ontbtc", "zecbtc", "wavesbtc", "btgbtc",
+               "vetbtc", "qtumbtc", "omgbtc", "zrxbtc", "gvtbtc", "bchabcbtc", "bchsvbtc"]
+    btc_list = symbols
     print(len(btc_list))
-    print(btc_list[0])
-    btc_list = ["btcusdt"]
+    # print(btc_list[0])
+    # btc_list = ["btcusdt"]
 
     for i in range(len(btc_list)):
-        errcode, errmsg, df = get_exsymbol_kline("BIAN", btc_list[i], "1d", "2017-06-01", "2019-01-10")
+        errcode, errmsg, df = get_exsymbol_kline("BIAN", btc_list[i], "1d", "2018-06-01", "2019-01-10")
         # 显示所有列
         pd.set_option('display.max_columns', None)
         # 显示所有行
         pd.set_option('display.max_rows', None)
         print(btc_list[i])
-        print(df)
+        print(df.head())
+        print(df.tail())
         # df.to_csv("/Users/wuyong/alldata/original_data/BIAN_"+btc_list[i]+"_4h_2018-01-01_2019-01-09.csv")
 
     # s_time = time.time()
     # errcode, errmsg, df = get_exsymbol_kline("BIAN", "adabtc", "4h", "2018-06-21", "2018-12-29")
-    # errcode, errmsg, df = get_exsymbol_kline("BITMEX", ".bxbt", "1h", "2018-06-27", "2018-12-27")
+    # errcode, errmsg, df = get_exsymbol_kline("BITFINEX", "btcusdt", "1d", "2016-01-01", "2019-01-10")
     # print(df.head())
     # print(df.tail())
+    # df.to_csv("/Users/wuyong/alldata/original_data/btcusdt_day_k.csv")
 
     # symbols = ["btcusdt", "ethusdt", "xrpusdt", "trxusdt", "eosusdt", "zecusdt", "ltcusdt",
     #            "etcusdt", "etpusdt", "iotusdt", "rrtusdt", "xmrusdt", "dshusdt", "avtusdt",

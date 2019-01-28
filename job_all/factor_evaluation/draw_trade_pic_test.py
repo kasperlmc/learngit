@@ -30,6 +30,7 @@ for symble in ["btc", "xrp", "eth", "eos"]:
     print(data_k.tail())
     tuple_list = [(x-x % 60, y) for x, y in zip(buy_time_list, buy_price_list)]
     print(tuple_list)
+    exit()
 
     save_trade_fig(tuple_list, data_k, "wave_90F", "trade_"+symble+"_wave_90F")
 

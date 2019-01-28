@@ -36,9 +36,10 @@ def huobi_kline_req(fromTime, toTime, symbol_kline, period_KLine):
             compressData = ws.recv()
             break
         except:
-            print('connect ws error,retry...')
+            # print('connect ws error,retry...')
+            pass
     # print(trader)
-    print(trader)
+    # print(trader)
 
     # print("websocket success connect")
     result = gzip.decompress(compressData).decode('utf-8')
@@ -47,8 +48,8 @@ def huobi_kline_req(fromTime, toTime, symbol_kline, period_KLine):
             ts = result[8:21]
             pong = '{"pong":' + ts + '}'
             ws.send(pong)
-            print("rev ping ,again req")
-            print(trader)
+            # print("rev ping ,again req")
+            # print(trader)
             ws.send(trader)
             # time.sleep(1)
             compressData = ws.recv()
@@ -86,7 +87,7 @@ def http_get_request(url, params=None, add_to_headers=None):
         else:
             return
     except BaseException as e:
-        print("httpGet failed, detail is:%s,%s" % (response.text, e))
+        # print("httpGet failed, detail is:%s,%s" % (response.text, e))
         return
 
 
@@ -209,10 +210,10 @@ def data_tran(l, rule):
     # print(len(df))
     # print(df)
     count = len(df)
-    print("第一条数据小时数：" + str(f_data_hour))
+    # print("第一条数据小时数：" + str(f_data_hour))
     if f_data_hour % 4 != 0:
         df.drop(labels=[0], inplace=True)
-    print("最后一条数据小时数：" + str(l_data_hour))
+    # print("最后一条数据小时数：" + str(l_data_hour))
     if l_data_hour % 4 != 3:
         df.drop(labels=[count - 1], inplace=True)
     del df['date']
@@ -270,24 +271,24 @@ def realtime_kline_BIAN(periods, symboles, start_time, end_time=None):
                 raise IOError("unknow period")
             for symbole in symboles:
                 while True:
-                    print(">>>>>>>>>period=%s,symbol=%s" % (str(period), str(symbole)))
+                    # print(">>>>>>>>>period=%s,symbol=%s" % (str(period), str(symbole)))
                     url = urlfmt_binance % (str(symbole), str(period), start_time)
-                    print(">>>>>>>>>url=%s", str(url))
-                    print(int(start_time) + internal_time)
-                    print(end_time)
+                    # print(">>>>>>>>>url=%s", str(url))
+                    # print(int(start_time) + internal_time)
+                    # print(end_time)
                     if start_time + internal_time >= end_time:
                         start_time = s_time_cp
-                        print("break while")
+                        # print("break while")
                         break
                     time.sleep(1)
                     res_tmp = http_get_request(url)
                     list_data = data_clean_binance(res_tmp, period, symbole)
                     lists_datas.extend(list_data)
-                    print(list_data)
+                    # print(list_data)
                     start_time = int(list_data[-1][3]) * 1000
         return lists_datas
     except Exception as e:
-        print(traceback.format_exc())
+        # print(traceback.format_exc())
         raise IOError('internal system error')
 
 
@@ -332,21 +333,21 @@ def realtime_kline_HUOBI(periods, symboles, start_time, end_time=None):
             for symbole in symboles:
                 lists_datas_cp = []
                 symbole = symbole.lower()
-                print(">>>>>>>>>period=%s,symbol=%s" % (str(p_period), str(symbole)))
+                # print(">>>>>>>>>period=%s,symbol=%s" % (str(p_period), str(symbole)))
                 while 1:
                     stop_flag = False
                     to_time = start_time + period_time
                     if start_time > time.time():
-                        print(
-                            ">>>>>>>>>>>>>start time greate then currency time,break;start_time=%s,currency_time=%s" % (
-                                start_time, time.time()))
+                        # print(
+                        #     ">>>>>>>>>>>>>start time greate then currency time,break;start_time=%s,currency_time=%s" % (
+                        #         start_time, time.time()))
                         start_time = start_time_cp
                         break
                     if to_time > time.time():
                         stop_flag = True
                         to_time = int(time.time())
-                        print(">>>>>>>>>>>>>define to time eq currency time,to_time=%s, currency_time=%s" % (
-                            to_time, time.time()))
+                        # print(">>>>>>>>>>>>>define to time eq currency time,to_time=%s, currency_time=%s" % (
+                        #     to_time, time.time()))
                     res = huobi_kline_req(start_time, to_time, symbole, period_req)
                     res_list_cp = res_list = data_clean_huobi(res, period, symbole)
                     if tran_flag:
@@ -355,7 +356,7 @@ def realtime_kline_HUOBI(periods, symboles, start_time, end_time=None):
                         lists_datas.extend(res_list)
                     start_time = to_time
                     if stop_flag:
-                        print("get all data and break")
+                        # print("get all data and break")
                         start_time = start_time_cp
                         break
                 if tran_flag:
@@ -409,14 +410,14 @@ def realtime_kline_BITFINEX(periods, symboles, start_time, end_time=None):
                 lists_datas_cp = []
                 p_symbole = symbole.lower()
                 while True:
-                    print(">>>>>>>>>period=%s,symbol=%s" % (str(p_period), str(p_symbole)))
+                    # print(">>>>>>>>>period=%s,symbol=%s" % (str(p_period), str(p_symbole)))
                     url = urlfmt_bitfinex % (str(period), str(symbole), start_time)
-                    print(">>>>>>>>>url=%s", str(url))
-                    print(int(start_time) + internal_time)
-                    print(end_time)
+                    # print(">>>>>>>>>url=%s", str(url))
+                    # print(int(start_time) + internal_time)
+                    # print(end_time)
                     if start_time + internal_time >= end_time:
                         start_time = s_time_cp
-                        print("break while")
+                        # print("break while")
                         break
                     time.sleep(1)
                     res_tmp = http_get_request(url)
@@ -425,7 +426,7 @@ def realtime_kline_BITFINEX(periods, symboles, start_time, end_time=None):
                         lists_datas_cp.extend(res_list_cp)
                     else:
                         lists_datas.extend(list_data)
-                    print(list_data)
+                    # print(list_data)
                     start_time = int(list_data[-1][3]) * 1000
                 if tran_flag:
                     list_tran_datas = data_tran(lists_datas_cp, '4h')
@@ -464,14 +465,14 @@ if __name__ == '__main__':
     # r = realtime_kline_BIAN('4h', 'BNBBTC', 1543593600)
     # r = realtime_kline_BIAN('4h', 'BNBBTC', '2018-12-01 00:00:00')
 
-    r = get_realtime_data('BIAN', '4h', 'ADABTC', '2018-12-21 00:00:00', end_time=None)
+    r = get_realtime_data('BIAN', '4h', 'ADABTC', '2018-01-23 00:00:00', end_time=None)
     # r = get_realtime_data('HUOBI', ['4h'], ['ethhusd', 'btcusdt'], '2018-12-01 00:00:00')
     # r = get_realtime_data('BITFINEX', ['4h'], ['BTCUSD', 'LTCUSD'], '2018-12-01 00:00:00')
     # print('333')
     cols = ["exchange", "period", "symbol", "tickid", "open", "high", "low", "close", "volume", "amount"]
     df = pd.DataFrame(r,columns=cols)
-    print(len(r))
-    print(df)
+    # print(len(r))
+    # print(df)
     # symbols=["btcusdt", "ethusdt", "xrpusdt", "trxusdt", "eosusdt", "zecusdt00", "ltcusdt",
     #          "etcusdt", "bchusdt", "iotausdt", "adausdt", "xmrusdt", "dashusdt", "htusdt",
     #          "omgusdt", "wavesusdt", "nanousdt", "btmusdt", "elausdt", "ontusdt", "iostusdt",

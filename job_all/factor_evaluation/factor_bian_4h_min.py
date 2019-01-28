@@ -94,14 +94,12 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
         return cash_list, asset_list, buy_list, btcnum_list, close_list, max_value_list, win_times
 
     df_last_min = df[symbols].ix[n-1]
-    df_last_min.dropna(inplace=True)
-    df_last_min.sort_values(inplace=True)
-    df_last_min = (df_last_min - df_last_min.median()).abs()
+    # df_last_min.dropna(inplace=True)
+    # df_last_min.sort_values(inplace=True)
+    # df_last_min = (df_last_min - df_last_min.median()).abs()
     min_idx = df_last_min.idxmin()
     max_value = df_last_min.min()
     max_value_list.append(max_value)
-    # print(df_last_min)
-    # print(max_value,min_idx)
     df_now_all = df.ix[n]
 
     if min_idx in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc",
@@ -177,7 +175,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                     # print(len(df_close_diff[df_close_diff > -9999999]))
                     # print(len(df_close_diff[df_close_diff>0]))
                     # length_diff = len(df_close_diff[df_close_diff > -9999999])
-                    if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"]:
+                    if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"] and df_last_all["position"] == 1:
                         posittion = 1
                     else:
                         posittion = 0
@@ -214,7 +212,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
 
                 if n > 1:
                     df_last_all = df.ix[n - 1]
-                    if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"]:
+                    if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"] and df_last_all["position"] == 1:
                         posittion = 1
                     else:
                         posittion = 0
@@ -436,8 +434,8 @@ for x in a:
         alpha_test.append("Alpha.alpha" + str(x))
 
 # alpha_test = ["Alpha.alpha052","Alpha.alpha058","Alpha.alpha067","Alpha.alpha069","Alpha.alpha110","Alpha.alpha135"]
-# alpha_test = ["Alpha.alpha069"]
-print("mid")
+alpha_test = ["Alpha.alpha069"]
+print("min")
 stat_ls = []
 for alpha in alpha_test:
     # 计算出每个alpha的策略指标
@@ -454,6 +452,8 @@ for alpha in alpha_test:
                 df = df.merge(df_1, how="left", left_index=True, right_index=True)
 
         # print(df.columns)
+        # print(df.head())
+        # print(df.tail())
         df["date_time"] = df.index
         data_day = pd.read_csv("/Users/wuyong/alldata/original_data/day_position.csv", index_col=0)
         df = df.merge(data_day, how="left", on="tickid")
@@ -509,9 +509,7 @@ for alpha in alpha_test:
         trade_times = len(np.where(trade_times != 0)[0])-1
         df_result["date_time"] = df_result.index
         df_result.index = range(len(df_result))
-        print(df_result.head())
         print(df_result.tail())
-        print(len(df_result["asset"].dropna()))
 
         # 计算出各个币对上的具体盈亏数额
         sum_ret_symbol = []
