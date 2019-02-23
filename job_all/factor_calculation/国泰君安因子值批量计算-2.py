@@ -40,7 +40,7 @@ for x in a:
 #print(alpha_test)
 #print(alpha_use)
 
-# alpha_test = ["Alpha.alpha081"]
+alpha_test = ["Alpha.alpha007"]
 if __name__ == '__main__':
 
     # exchange = 'BITFINEX'
@@ -49,13 +49,13 @@ if __name__ == '__main__':
                "xembtc", "etcbtc", "neobtc", "ontbtc", "zecbtc", "wavesbtc", "btgbtc",
                "vetbtc", "qtumbtc", "omgbtc", "zrxbtc", "gvtbtc", "bchabcbtc", "bchsvbtc"]
 
-    # errcode, errmsg, result = get_exsymbol("BIAN")
-    # symbols = [x for x in result if x[-3:] == "btc"]
+    errcode, errmsg, result = get_exsymbol("BIAN")
+    symbols = [x for x in result if x[-3:] == "btc"]
     # print(len(symbols))
 
     # symbols = [x.upper() for x in symbols]
 
-    # symbols = ["ethbtc"]
+    # symbols = ["xrpbtc"]
 
     # 因子是price_volume, 有一个参数corr_window, 参数取值10/25/50
     # 能形成三组因子时间序列：price_volume_10/25/50, 存入本地和数据库
@@ -65,9 +65,9 @@ if __name__ == '__main__':
     for symbol in symbols:
         for factor in alpha_test:
             try:
-                dataf = pd.read_csv("/Users/wuyong/alldata/original_data/BIAN_"+symbol+"_4h_2018-01-01_2019-01-09.csv",index_col=0)
+                dataf = pd.read_csv("/Users/wuyong/alldata/original_data/BIAN_"+symbol+"_4h_2018-01-01_2019-02-14.csv", index_col=0)
+                print(dataf.tail())
                 print(symbol)
-                # exit()
                 Alpha = Alphas(dataf)
                 col_name = factor
                 df_m = copy.deepcopy(dataf)
@@ -78,7 +78,7 @@ if __name__ == '__main__':
                 fname = '/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + symbol + "_" + factor_name + '.csv'
                 write_db(df_m, fname, False)
                 print('write' + fname + '...')
-            except AttributeError:
+            except (AttributeError, FileNotFoundError):
                 print(factor)
 
 

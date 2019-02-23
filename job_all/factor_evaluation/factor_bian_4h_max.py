@@ -445,7 +445,7 @@ for x in a:
         alpha_test.append("Alpha.alpha" + str(x))
 
 # alpha_test = ["Alpha.alpha052","Alpha.alpha058","Alpha.alpha067","Alpha.alpha069","Alpha.alpha110","Alpha.alpha096"]
-# alpha_test = ["Alpha.alpha052"]
+# alpha_test = ["Alpha.alpha202"]
 stat_ls = []
 for alpha in alpha_test:
     # 计算出每个alpha的策略指标
@@ -486,11 +486,11 @@ for alpha in alpha_test:
         # print(df["index"])
         # df["index"] = dataf["close"]
         # print(df["index"])
-        combine_value = pd.Series(np.zeros(len(df)), name="mid_value")
         for close in symbols_close:
-            df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
-            combine_value[df[close] > df[close + str(25)]] = combine_value+1
-        df["strength"] = combine_value
+            try:
+                df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
+            except:
+                pass
         # df["index"] = (df[symbols_close]/df[symbols_close].iloc[0]).sum(axis=1)
         # df["index_ma5"]=ta.MA(df["index"].values,timeperiod=5)
         # df["index_ma20"]=ta.MA(df["index"].values,timeperiod=20)
@@ -563,8 +563,9 @@ for alpha in alpha_test:
 df_last = pd.DataFrame(stat_ls, columns=cols)
 df_last = df_last.sort_values(by="ret_ratio", ascending=False)
 print("max")
-print("加市场过滤器")
+print("不加市场过滤器")
 print(df_last)
+df_last.to_csv("/Users/wuyong/alldata/factor_writedb/factor_stra_4h/factor_result.csv")
 
 # data_k = pd.read_csv("/Users/wuyong/alldata/original_data/btcusdt_day_k.csv", index_col=0)
 #

@@ -70,7 +70,43 @@ aim_symbols = ["ethbtc", "eosbtc", "xrpbtc", "trxbtc","tusdbtc", "bchabcbtc", "b
 symbols_close = [x+"_close" for x in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc", "bchabcbtc", "bchsvbtc", "ontbtc", "ltcbtc", "adabtc", "bnbbtc"]]
 
 
+# def pick_coin(alpha_list):
+#     for i in range(len(alpha_list)):
+#         # 计算出每个alpha的策略指标
+#         try:
+#             for symbol in symbols:
+#                 data = pd.read_csv(
+#                     '/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + symbol + "_" + alpha_list[i] + "_gtja4h" + '.csv',
+#                     index_col=0)
+#                 data = data[data["tickid"] < 1529942400]
+#                 data.drop_duplicates(subset="tickid", keep="last", inplace=True)
+#
+#                 if symbol == symbols[0]:
+#                     df = pd.DataFrame({symbol: data[alpha_list[i]].values, symbol + "_close": data["close"].values,
+#                                        symbol + "_open": data["open"].values, "tickid": data["tickid"].values},
+#                                       index=data["date"].values)
+#                 else:
+#                     df_1 = pd.DataFrame({symbol: data[alpha_list[i]].values, symbol + "_close": data["close"].values,
+#                                          symbol + "_open": data["open"].values}, index=data["date"].values)
+#                     df = df.merge(df_1, how="left", left_index=True, right_index=True)
+#             df_symbols = df[symbols]
+#             df_symbols = df_symbols.rank(axis=1,numeric_only=True,na_option="keep")
+#             if i == 0:
+#                 df_symbols_last = df_symbols
+#             else:
+#                 df_symbols_temp = df_symbols
+#                 df_symbols_last = df_symbols_last+df_symbols_temp
+#
+#         except (FileNotFoundError, TypeError) as e:
+#             print(e)
+#     # print(df_symbols_last)
+#     df[symbols] = df_symbols_last
+#     return df
+
+
 def pick_coin(alpha_list):
+    df_symbols_last = None
+    df = None
     for i in range(len(alpha_list)):
         # 计算出每个alpha的策略指标
         try:
@@ -78,7 +114,7 @@ def pick_coin(alpha_list):
                 data = pd.read_csv(
                     '/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + symbol + "_" + alpha_list[i] + "_gtja4h" + '.csv',
                     index_col=0)
-                data = data[data["tickid"] > 1530093600]
+                data = data[(data["tickid"] > 1530093600) & (data["tickid"] < 2547049600)]
                 data.drop_duplicates(subset="tickid", keep="last", inplace=True)
 
                 if symbol == symbols[0]:
@@ -99,9 +135,9 @@ def pick_coin(alpha_list):
 
         except (FileNotFoundError, TypeError) as e:
             print(e)
-    # print(df_symbols_last)
     df[symbols] = df_symbols_last
     return df
+
 
 
 @tail_call_optimized
@@ -155,10 +191,10 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                 btcnum_list.append(btcnum_list[-1])
                 close_list.append(df_now_all[min_idx + "_close"])
 
-                logger.info(df.ix[n].date_time)
-                logger.info("继续持仓%s"%min_idx)
-                logger.info("此时的资产总值为%s"%asset_list[-1])
-                logger.info("此时的最大因子值为%s"%max_value)
+                # logger.info(df.ix[n].date_time)
+                # logger.info("继续持仓%s"%min_idx)
+                # logger.info("此时的资产总值为%s"%asset_list[-1])
+                # logger.info("此时的最大因子值为%s"%max_value)
 
                 return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                        max_value_list, posittion, win_times, price_list)
@@ -169,10 +205,10 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                 btcnum_list.append(btcnum_list[-1])
                 close_list.append(df_now_all[min_idx + "_close"])
 
-                logger.info(df.ix[n].date_time)
-                logger.info("继续持仓%s"%min_idx)
-                logger.info("此时的资产总值为%s"%asset_list[-1])
-                logger.info("此时的最大因子值为%s"%max_value)
+                # logger.info(df.ix[n].date_time)
+                # logger.info("继续持仓%s"%min_idx)
+                # logger.info("此时的资产总值为%s"%asset_list[-1])
+                # logger.info("此时的最大因子值为%s"%max_value)
 
                 return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                        max_value_list, posittion, win_times, price_list)
@@ -187,17 +223,17 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                     btcnum_list.append(btcnum_list[-1])
                     close_list.append(close_list[-1])
 
-                    logger.info("数据缺失，不卖%s，不买%s" % (buy_list[-1],min_idx))
-                    logger.info("此时的资产总值为%s" % asset_list[-1])
-                    logger.info("此时的最大因子值为%s" % max_value)
+                    # logger.info("数据缺失，不卖%s，不买%s" % (buy_list[-1],min_idx))
+                    # logger.info("此时的资产总值为%s" % asset_list[-1])
+                    # logger.info("此时的最大因子值为%s" % max_value)
 
                     return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                            max_value_list, posittion, win_times, price_list)
                 else:
                     # print("定位",n)
 
-                    logger.info(df.ix[n].date_time)
-                    logger.info("卖出%s，卖价为%s" % (buy_list[-1], sell_price))
+                    # logger.info(df.ix[n].date_time)
+                    # logger.info("卖出%s，卖价为%s" % (buy_list[-1], sell_price))
 
                     sell_amount = btcnum_list[-1]
                     cash_get = sell_price * sell_amount
@@ -232,15 +268,15 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                         btcnum_list.append(0)
                         close_list.append(0)
 
-                        logger.info("买价缺失，不买%s" % min_idx)
-                        logger.info("此时的资产总值为%s" % asset_list[-1])
-                        logger.info("此时的最大因子值为%s" % max_value)
+                        # logger.info("买价缺失，不买%s" % min_idx)
+                        # logger.info("此时的资产总值为%s" % asset_list[-1])
+                        # logger.info("此时的最大因子值为%s" % max_value)
 
                         return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                                max_value_list, posittion, win_times, price_list)
                     else:
 
-                        logger.info("买入%s,买入价格为%s,买入仓位为%s" % (min_idx, buy_price, posittion))
+                        # logger.info("买入%s,买入价格为%s,买入仓位为%s" % (min_idx, buy_price, posittion))
 
                         buy_amount = ((cash_get + cash_list[-1]) * posittion) / buy_price
                         cash_now = (cash_get + cash_list[-1]) * (1 - posittion)
@@ -248,8 +284,8 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                         asset_list.append(buy_amount * df_now_all[min_idx + "_close"] + cash_now)
                         # asset_chg.append(buy_amount*buy_price)
 
-                        logger.info("此时的资产总值为%s" % asset_list[-1])
-                        logger.info("此时的最大因子值为%s" % max_value)
+                        # logger.info("此时的资产总值为%s" % asset_list[-1])
+                        # logger.info("此时的最大因子值为%s" % max_value)
 
                         buy_list.append(min_idx)
                         btcnum_list.append(buy_amount)
@@ -258,7 +294,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                         return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                                max_value_list, posittion, win_times, price_list)
             else:
-                logger.info(df.ix[n].date_time)
+                # logger.info(df.ix[n].date_time)
                 buy_price = df_now_all[min_idx + "_open"] * (1 + slippage)
 
                 if n > 1:
@@ -270,23 +306,23 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
 
                 if buy_price*0 != 0:
                     print("数据缺失_k", buy_price)
-                    logger.info("买入数据缺失，不买%s" % min_idx)
+                    # logger.info("买入数据缺失，不买%s" % min_idx)
                     cash_list.append(cash_list[-1])
                     asset_list.append(asset_list[-1])
                     buy_list.append(buy_list[-1])
                     btcnum_list.append(btcnum_list[-1])
                     close_list.append(close_list[-1])
-                    logger.info("此时的资产总值为%s" % asset_list[-1])
-                    logger.info("此时的最大因子值为%s" % max_value)
+                    # logger.info("此时的资产总值为%s" % asset_list[-1])
+                    # logger.info("此时的最大因子值为%s" % max_value)
                     return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                            max_value_list, posittion, win_times, price_list)
                 else:
-                    logger.info("开仓买入%s,买入价为%s，买入的仓位为%s" % (min_idx, buy_price, posittion))
+                    # logger.info("开仓买入%s,买入价为%s，买入的仓位为%s" % (min_idx, buy_price, posittion))
                     buy_amount = cash_list[-1]*posittion / buy_price
                     cash_list.append(cash_list[-1]*(1-posittion))
                     asset_list.append(buy_amount * df_now_all[min_idx + "_close"]+cash_list[-1])
-                    logger.info("此时的资产总值为%s" % asset_list[-1])
-                    logger.info("此时的最大因子值为%s" % max_value)
+                    # logger.info("此时的资产总值为%s" % asset_list[-1])
+                    # logger.info("此时的最大因子值为%s" % max_value)
                     # asset_chg.append(buy_price*buy_amount)
                     buy_list.append(min_idx)
                     btcnum_list.append(buy_amount)
@@ -295,23 +331,23 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                     return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                            max_value_list, posittion, win_times, price_list)
     else:
-        logger.info(df.ix[n].date_time)
+        # logger.info(df.ix[n].date_time)
         if type(buy_list[-1]) == str:
             sell_price = df_now_all[buy_list[-1] + "_open"] * (1 - slippage)
             if sell_price*0 != 0:
                 print("数据缺失_p", sell_price)
-                logger.info("数据缺失，不卖出%s" % buy_list[-1])
+                # logger.info("数据缺失，不卖出%s" % buy_list[-1])
                 cash_list.append(cash_list[-1])
                 asset_list.append(asset_list[-1])
                 buy_list.append(buy_list[-1])
                 btcnum_list.append(btcnum_list[-1])
                 close_list.append(close_list[-1])
-                logger.info("此时的资产总值为%s" % asset_list[-1])
-                logger.info("此时的最大因子值为%s" % max_value)
+                # logger.info("此时的资产总值为%s" % asset_list[-1])
+                # logger.info("此时的最大因子值为%s" % max_value)
                 return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
                                        max_value_list, posittion, win_times, price_list)
             else:
-                logger.info("卖出%s" % buy_list[-1])
+                # logger.info("卖出%s" % buy_list[-1])
                 sell_amount = btcnum_list[-1]
                 cash_get = sell_price * sell_amount + cash_list[-1]
                 cash_list.append(cash_get)
@@ -319,8 +355,8 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                 buy_list.append(np.nan)
                 btcnum_list.append(0)
                 close_list.append(0)
-                logger.info("此时的资产总值为%s" % asset_list[-1])
-                logger.info("此时的最大因子值为%s" % max_value)
+                # logger.info("此时的资产总值为%s" % asset_list[-1])
+                # logger.info("此时的最大因子值为%s" % max_value)
                 if sell_price > price_list[-1] and sell_amount > 0:
                     win_times += 1
                 return multiple_factor(df, cash_list, asset_list, buy_list, btcnum_list, n + 1, close_list,
@@ -456,42 +492,49 @@ def summary_net(net_df, plot_in_loops,alpha):
     return result, cols
 
 
-alpha_test_all = ["Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha024", "Alpha.alpha028", "Alpha.alpha050",
-                  "Alpha.alpha051", "Alpha.alpha052", "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128",
-                  "Alpha.alpha159", "Alpha.alpha167", "Alpha.alpha175"]
+df_alpha = pd.read_csv("/Users/wuyong/alldata/factor_writedb/factor_stra_4h/factor_result.csv", index_col=0)
+alpha_test_all = list(df_alpha["alpha"].values)
 
-
+data_result = pd.read_csv("/Users/wuyong/alldata/factor_writedb/factor_stra_4h/cor_result.csv", index_col=0)
 # print(list(itertools.combinations(alpha_test_all,2)))
-alpha_two_combine = list(itertools.combinations(alpha_test_all,10))
+alpha_two_combine = list(itertools.combinations(alpha_test_all, 2))
 print(len(alpha_two_combine))
-# exit()
 # alpha_two_combine = alpha_two_combine[:10]
-alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha028", "Alpha.alpha050","Alpha.alpha051",
-                      "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
+# alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha028", "Alpha.alpha050","Alpha.alpha051",
+#                       "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
 
+
+alpha_combine_base = ["Alpha.alpha069", "Alpha.alpha055", "Alpha.alpha050", "Alpha.alpha018", "Alpha.alpha118"]
 stat_ls = []
-for i in range(len(alpha_two_combine)):
-    alpha_test = alpha_two_combine[i]
+for i in range(len(alpha_test_all)):
+    alpha_test = alpha_combine_base + [alpha_test_all[i]]
+    print(alpha_test)
+    alpha_test = sorted(alpha_test)
     alpha_name = ""
     for name in alpha_test:
         alpha_name += name[-3:]
+    alpha_two_combine_corr = list(itertools.combinations(list(alpha_test), 2))
+    sum_corr = 0
+    for i in range(len(alpha_two_combine_corr)):
+        try:
+            corr = data_result[data_result.index == str(alpha_two_combine_corr[i])]["corr"].values[0]
+            corr = abs(corr)
+            sum_corr += corr
+        except IndexError:
+            corr = 1
+            sum_corr += corr
     df = pick_coin(alpha_test)
     df["date_time"] = df.index
     data_day = pd.read_csv("/Users/wuyong/alldata/original_data/day_position.csv", index_col=0)
     data_day["tickid"] = data_day["tickid"] + 86400
     df = df.merge(data_day, how="left", on="tickid")
     df["position"] = df["position"].fillna(method="ffill")
-    # print(df[["position", "ethbtc"]])
-    # print(len(df))
-    # df.dropna(inplace=True)
-    # print(df.ix["2018-03-01 00:00:00":])
-    # df=df.ix["2018-03-01 00:00:00":]
     df["index"] = range(len(df))
     df.index = df["index"]
     # 计算出资产组合对比指标
     dataf = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + "tusdbtc" + "_" + alpha_test[0] + "_gtja4h" + '.csv',index_col=0)
     # print(dataf.tail())
-    dataf = dataf[dataf["tickid"] > 1530093600]
+    dataf = dataf[(dataf["tickid"] > 1530093600) & (dataf["tickid"] < 2547049600)]
     dataf.drop_duplicates(subset="tickid", keep="last", inplace=True)
     index_values = list(dataf["close"].values)
     # print(index_values)
@@ -499,22 +542,22 @@ for i in range(len(alpha_two_combine)):
     # print(df["index"])
     # df["index"] = dataf["close"]
     # print(df["index"])
-    combine_value = pd.Series(np.zeros(len(df)), name="mid_value")
     for close in symbols_close:
-        df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
-        combine_value[df[close] > df[close + str(25)]] = combine_value + 1
-    df["strength"] = combine_value
+        try:
+            df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
+        except :
+            pass
 
-    logger = logging.getLogger(str(i))  # logging对象
-    fh = logging.FileHandler('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/' + alpha_name + "_max.log",
-                             mode="w")  # 文件对象
-    sh = logging.StreamHandler()  # 输出流对象
-    fm = logging.Formatter('%(asctime)s-%(filename)s[line%(lineno)d]-%(levelname)s-%(message)s')  # 格式化对象
-    fh.setFormatter(fm)  # 设置格式
-    sh.setFormatter(fm)  # 设置格式
-    logger.addHandler(fh)  # logger添加文件输出流
-    logger.addHandler(sh)  # logger添加标准输出流（std out）
-    logger.setLevel(logging.INFO)  # 设置从那个等级开始提示
+    # logger = logging.getLogger(str(i))  # logging对象
+    # fh = logging.FileHandler('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/' + alpha_name + "_max.log",
+    #                          mode="w")  # 文件对象
+    # sh = logging.StreamHandler()  # 输出流对象
+    # fm = logging.Formatter('%(asctime)s-%(filename)s[line%(lineno)d]-%(levelname)s-%(message)s')  # 格式化对象
+    # fh.setFormatter(fm)  # 设置格式
+    # sh.setFormatter(fm)  # 设置格式
+    # logger.addHandler(fh)  # logger添加文件输出流
+    # logger.addHandler(sh)  # logger添加标准输出流（std out）
+    # logger.setLevel(logging.INFO)  # 设置从那个等级开始提示
 
     cash_list, asset_list, buy_list, btcnum_list, close_list, max_value_list, win_times = multiple_factor(df, cash_list=[10000], asset_list=[10000], buy_list=[np.nan], btcnum_list=[0], n=1, close_list=[0], max_value_list=[0], posittion=0,win_times=0, price_list=[])
     df_result=pd.DataFrame({"cash": cash_list, "asset": asset_list, "buy": buy_list, "coinnum": btcnum_list, "close": close_list, "max_value": max_value_list}, index=df["date_time"])
@@ -528,7 +571,9 @@ for i in range(len(alpha_two_combine)):
     trade_times = len(np.where(trade_times != 0)[0])-1
     df_result["date_time"] = df_result.index
     df_result.index = range(len(df_result))
-    print(df_result)
+    print(alpha_name)
+    print(df_result.tail())
+    print("\n")
 
     # 计算出各个币对上的具体盈亏数额
     sum_ret_symbol = []
@@ -552,7 +597,6 @@ for i in range(len(alpha_two_combine)):
         sum_ret_symbol.append(df_mid2["asset_diff"].sum())
         # exit()
 
-
     df_result["net"] = df_result["asset"]
     # print(df_result)
     df_result["index"] = df["index"]
@@ -562,9 +606,9 @@ for i in range(len(alpha_two_combine)):
     # print(df_result[["net","asset_diff","buy","asset","date_time"]])
     result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 0, "multifactor"+alpha_name)
     result = result+sum_ret_symbol
-    result = [trade_times, trade_times_oct, alpha_name, win_times]+result
+    result = [trade_times, trade_times_oct, alpha_name, win_times, sum_corr]+result
     cols = cols+symbols
-    cols = ["trade_times", "trade_times_oct", "alpha", "win_times"]+cols
+    cols = ["trade_times", "trade_times_oct", "alpha", "win_times", "corr"]+cols
     stat_ls.append(result)
     # df_last=pd.DataFrame(stat_ls, columns=cols)
     # print(df_last)

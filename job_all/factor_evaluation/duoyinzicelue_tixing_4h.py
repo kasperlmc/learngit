@@ -8,7 +8,7 @@ from lib.factors_gtja import *
 from lib.realtime_kline_api_all import *
 from lib.notifyapi import *
 import time
-import logging
+import datetime
 from collections import Counter
 
 
@@ -34,23 +34,29 @@ slippage = 0.002
 #     else:
 #         return pd.DataFrame()
 
-alpha_test = ["Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha028", "Alpha.alpha050","Alpha.alpha051",
-              "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175"]
+alpha_test = ["Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha050","Alpha.alpha051",
+              "Alpha.alpha069", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175"]
 
 
 # 获取上一根K线各个币对因子的排名
 def get_rank(now_time, m=30, alpha=alpha_test):
     start_time = (now_time-now_time % 14400)-m*14400
     time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))
-    result_dict = {}
+    symbol_upper = [symbol.upper() for symbol in symbols]
+    starttime = datetime.datetime.now()
+    df_all = get_realtime_data('BIAN', '4h', symbol_upper, start_time=time_str, end_time=None)
+    endtime = datetime.datetime.now()
+    print((endtime - starttime).seconds)
+    df_all = pd.DataFrame(df_all, columns=cols)
+    df_all[["open", "close", "high", "low", "volume", "amount"]] = df_all[
+        ["open", "close", "high", "low", "volume", "amount"]].astype("float")
+    results = []
     for i in range(len(alpha)):
         print(alpha[i])
         result_dict_temp = {}
         for symbol in symbols:
             print(symbol)
-            values_list = get_realtime_data('BIAN', '4h', symbol.upper(), start_time=time_str, end_time=None)
-            df_temp = pd.DataFrame(values_list, columns=cols)
-            df_temp[["open", "close", "high", "low", "volume", "amount"]] = df_temp[["open", "close", "high", "low", "volume", "amount"]].astype("float")
+            df_temp = df_all[df_all["symbol"] == symbol]
             df_temp = df_temp.head(m)
             if len(df_temp) == 0:
                 pass
@@ -59,13 +65,15 @@ def get_rank(now_time, m=30, alpha=alpha_test):
                 Alpha = Alphas(df_temp)
                 df_temp[alpha[i]] = eval(alpha[i])()
                 result_dict_temp[symbol] = df_temp[alpha[i]].dropna().values[-1]
-        if i == 0:
-            result_dict = result_dict_temp
-        else:
-            result_dict, result_dict_temp = Counter(result_dict), Counter(result_dict_temp)
-            result_dict = dict(result_dict + result_dict_temp)
-            print(result_dict)
-    max_symble = max(result_dict, key=result_dict.get)
+        results.append(result_dict_temp)
+    result_dict_last = {}
+    for _ in results:
+        for k, v in _.items():
+            result_dict_last.setdefault(k, []).append(v)
+    df = pd.DataFrame.from_dict(result_dict_last)
+    df = df.rank(axis=1, numeric_only=True, na_option="keep")
+    series = df.sum()
+    max_symble = series.idxmax()
     return max_symble
 
 
@@ -199,7 +207,7 @@ df.to_csv("/Users/wuyong/alldata/original_data/last_result.csv")
 now_time = int(time.time())
 time_str_tmp = time.strftime('%Y-%m-%d %H:%M', time.localtime(now_time))
 now_time = int(time.mktime(time.strptime(time_str_tmp, '%Y-%m-%d %H:%M')))
-now_time = 1530230460
+now_time = 1550534460
 time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(now_time))
 print(time_str)
 

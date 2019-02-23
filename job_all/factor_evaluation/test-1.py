@@ -69,8 +69,9 @@ print(a.keys())
 print(list(a.keys()))
 print(a["a"])
 
-for x in range(0):
-    print("no")
+print("-"*30)
+for i in range(0,5,2):
+    print(i)
 
 
 

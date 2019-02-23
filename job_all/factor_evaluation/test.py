@@ -10,13 +10,13 @@ pd.set_option('display.max_columns', None)
 # 显示所有行
 pd.set_option('display.max_rows', None)
 
-data_1 = pd.read_csv("/Users/wuyong/alldata/original_data/BIAN_ETHBTC_4h_2018-06-01_2018-12-27.csv",index_col=0)
-data_2 = pd.read_csv("/Users/wuyong/alldata/original_data/BIAN_XRPBTC_4h_2018-06-01_2018-12-27.csv",index_col=0)
-data_1.drop_duplicates(subset="tickid", keep="last", inplace=True)
-data_2.drop_duplicates(subset="tickid", keep="last", inplace=True)
-data_1["date"] = pd.to_datetime(data_1["tickid"].values,unit="s")
-data_2["date"] = pd.to_datetime(data_2["tickid"].values,unit="s")
-print(data_1[data_1["tickid"] > 1530093600])
+# data_1 = pd.read_csv("/Users/wuyong/alldata/original_data/BIAN_ETHBTC_4h_2018-06-01_2018-12-27.csv",index_col=0)
+# data_2 = pd.read_csv("/Users/wuyong/alldata/original_data/BIAN_XRPBTC_4h_2018-06-01_2018-12-27.csv",index_col=0)
+# data_1.drop_duplicates(subset="tickid", keep="last", inplace=True)
+# data_2.drop_duplicates(subset="tickid", keep="last", inplace=True)
+# data_1["date"] = pd.to_datetime(data_1["tickid"].values,unit="s")
+# data_2["date"] = pd.to_datetime(data_2["tickid"].values,unit="s")
+# print(data_1[data_1["tickid"] > 1530093600])
 # print(data_1.head())
 # print(data_1.tail())
 # print(data_2.head())
@@ -38,6 +38,16 @@ print(data_1[data_1["tickid"] > 1530093600])
 
 
 
+l1 = [1,2,3,4]
+a = l1[0] if len(l1) > 0 else None
+print(a)
+
+num = 250*4
+re_l = []
+for i in range(60, num-20, 20):
+    for x in range(50):
+        re_l.append(i)
+print(len(re_l))
 
 
 

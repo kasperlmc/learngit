@@ -8,8 +8,6 @@ from lib.factors_gtja import *
 from lib.realtime_kline_api_all import *
 from lib.notifyapi import *
 import time
-import logging
-from collections import defaultdict
 from multiprocessing.dummy import Pool as ThreadPool
 
 
@@ -58,6 +56,8 @@ def get_max_coin(now_time, m=31, alpha_list=alpha_test):
     # Open the urls in their own threads
     # and return the results
     results = pool.map(get_rank, alpha_list)
+    print(results)
+    print(type(results))
     # close the pool and wait for the work to finish
     pool.close()
     pool.join()

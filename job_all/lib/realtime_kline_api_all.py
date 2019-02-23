@@ -280,7 +280,7 @@ def realtime_kline_BIAN(periods, symboles, start_time, end_time=None):
                         start_time = s_time_cp
                         # print("break while")
                         break
-                    time.sleep(1)
+                    time.sleep(0.3)
                     res_tmp = http_get_request(url)
                     list_data = data_clean_binance(res_tmp, period, symbole)
                     lists_datas.extend(list_data)
@@ -464,15 +464,31 @@ if __name__ == '__main__':
     # r = realtime_kline_BIAN(['4h', '1d'], ['EOSBTC', 'BNBBTC'], 1543593600000)
     # r = realtime_kline_BIAN('4h', 'BNBBTC', 1543593600)
     # r = realtime_kline_BIAN('4h', 'BNBBTC', '2018-12-01 00:00:00')
+    import datetime
+    now_time = int(time.time())
+    time_str_tmp = time.strftime('%Y-%m-%d %H:%M', time.localtime(now_time))
+    now_time = int(time.mktime(time.strptime(time_str_tmp, '%Y-%m-%d %H:%M')))
+    start_time = (now_time - now_time % 14400) - 30 * 14400
+    time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))
 
-    r = get_realtime_data('BIAN', '4h', 'ADABTC', '2018-01-23 00:00:00', end_time=None)
+    symbols = ["ethbtc", "xrpbtc", "mdabtc", "eosbtc", "xlmbtc", "tusdbtc", "ltcbtc",
+               "stratbtc", "trxbtc", "adabtc", "iotabtc", "xmrbtc", "bnbbtc", "dashbtc",
+               "xembtc", "etcbtc", "neobtc", "ontbtc", "zecbtc", "wavesbtc", "btgbtc",
+               "vetbtc", "qtumbtc", "omgbtc", "zrxbtc", "gvtbtc", "bchabcbtc", "bchsvbtc"]
+
+    symbol_upper = [symbol.upper() for symbol in symbols]
+    starttime = datetime.datetime.now()
+    r = get_realtime_data('BIAN', '4h', symbol_upper, time_str, end_time=None)
+    endtime = datetime.datetime.now()
+    print((endtime - starttime).seconds)
     # r = get_realtime_data('HUOBI', ['4h'], ['ethhusd', 'btcusdt'], '2018-12-01 00:00:00')
     # r = get_realtime_data('BITFINEX', ['4h'], ['BTCUSD', 'LTCUSD'], '2018-12-01 00:00:00')
     # print('333')
     cols = ["exchange", "period", "symbol", "tickid", "open", "high", "low", "close", "volume", "amount"]
-    df = pd.DataFrame(r,columns=cols)
+    df = pd.DataFrame(r, columns=cols)
     # print(len(r))
-    # print(df)
+    print(df)
+    print(type(df["volume"].values[0]))
     # symbols=["btcusdt", "ethusdt", "xrpusdt", "trxusdt", "eosusdt", "zecusdt00", "ltcusdt",
     #          "etcusdt", "bchusdt", "iotausdt", "adausdt", "xmrusdt", "dashusdt", "htusdt",
     #          "omgusdt", "wavesusdt", "nanousdt", "btmusdt", "elausdt", "ontusdt", "iostusdt",

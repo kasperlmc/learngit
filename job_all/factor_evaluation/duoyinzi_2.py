@@ -49,12 +49,136 @@ import talib as ta
 import itertools
 import logging
 import copy
+import time
+import mpl_finance as mpf
 
 
 # 显示所有列
 pd.set_option('display.max_columns', None)
 # 显示所有行
 pd.set_option('display.max_rows', None)
+
+
+def total_ret(net):
+    # print(net.iloc[-1],net.iloc[0])
+    return net.iloc[-1] / net.iloc[0] - 1
+
+
+def long_ret(net_df):
+    net_df = net_df.copy()
+    net_df['ret'] = net_df['net'] / net_df['net'].shift(1)
+    long_ret = np.prod(net_df['ret']) - 1
+    return long_ret
+
+
+def month_profit(net_df):
+    net_df = net_df.set_index('date_time')
+    ret = []
+    for gid, group in net_df.groupby(pd.Grouper(freq='M')):
+        gid = group.index[0]
+        long_return = long_ret(group)
+        ret.append([gid, long_return])
+
+    month_ret = pd.DataFrame(ret, columns=['date_time', 'long_return'])
+    return month_ret
+
+
+def ts_sum(df, window=10):
+    return df.rolling(window).sum()
+
+
+def annual_ret(net):
+    # input daily net
+    tot_ret = total_ret(net)
+    day = len(net)
+    return (tot_ret + 1) ** (365.0 / day) - 1
+
+
+def AnnualVolatility(net):
+    net = net.dropna()
+    net_values = net.values
+    logreturns = np.diff(np.log(net_values))
+    annualVolatility = np.std(logreturns) / np.mean(logreturns)
+    annualVolatility = annualVolatility / np.sqrt(1 / 365)
+    return annualVolatility
+
+
+def sharpe_ratio(net):
+    # input daily net
+    try:
+        ret = np.log(net / net.shift(1))
+        sharpe = ret.mean() / ret.std() * 365 ** 0.5
+    except:
+        sharpe = np.nan
+    return sharpe
+
+
+def max_drawdown(A):
+    I = -99999999
+    for i in range(len(A)-1):
+        a = A[i+1:]
+        min_a=min(a)
+        maxval = 1-min_a/A[i]
+        I = max(I,maxval)
+    return I*100
+
+
+def mkfpath(folder, fname):
+    try:
+        os.mkdir(folder)
+    except:
+        pass
+    fpath = folder + '/' + fname
+    return fpath
+
+
+def summary_net(net_df, plot_in_loops,alpha):
+    month_ret = month_profit(net_df)
+    # 转换成日净值
+    net_df.set_index('date_time', inplace=True)
+    # print(net_df)
+    # print(len(net_df))
+    net_df = net_df.resample(rule='1D').apply({"net": "last", "index": "last"})
+    # net_df.reset_index(inplace=True)
+    # print(net_df.asfreq())
+    net_df.dropna(how="all", inplace=True)
+
+    # 计算汇总
+    net_df["date_time"]=net_df.index
+    net = net_df['net']
+    tot_ret = total_ret(net)
+    ann_ret = annual_ret(net)
+    sharpe = sharpe_ratio(net)
+    annualVolatility = AnnualVolatility(net)
+    drawdown = max_drawdown(net.values)
+    ret_r = ann_ret / drawdown
+
+    result = [tot_ret, ann_ret, sharpe, annualVolatility,
+              drawdown, ret_r,
+              net_df['date_time'].iloc[0], net_df['date_time'].iloc[-1]]
+    cols = ['tot_ret', 'ann_ret', 'sharpe', 'annualVolatility', 'max_drawdown', 'ret_ratio', 'start_time', 'end_time']
+
+    if plot_in_loops:
+        param_str = alpha
+
+        net_df['index'] = net_df["index"]/net_df["index"].iloc[0]
+        net_df['net'] = net_df['net'] / net_df['net'].iloc[0]
+
+        fpath = mkfpath('/Users/wuyong/alldata/original_data/temp/', param_str + '.png')
+
+        fig, ax = plt.subplots(2)
+        net_df.plot(x='date_time', y=['index', 'net'], title=param_str, grid=True, ax=ax[0])
+        ax[0].set_xlabel('')
+        month_ret['month'] = month_ret['date_time'].dt.strftime('%Y-%m')
+        month_ret.plot(kind='bar', x='month',
+                       y=['long_return'],
+                       color=['r'], grid=True, ax=ax[1])
+        plt.tight_layout()
+        plt.savefig(fpath)
+        # plt.show()
+
+    return result, cols
+
 
 slippage = 0.002
 
@@ -71,7 +195,9 @@ aim_symbols = ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc", "bchabcbtc", "
 symbols_close = [x+"_close" for x in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc", "bchabcbtc", "bchsvbtc", "ontbtc", "ltcbtc", "adabtc", "bnbbtc"]]
 
 
-def pick_coin(alpha_list):
+def pick_coin(alpha_list, ratio_dict):
+    df_symbols_last = None
+    df = None
     for i in range(len(alpha_list)):
         # 计算出每个alpha的策略指标
         try:
@@ -92,6 +218,7 @@ def pick_coin(alpha_list):
                     df = df.merge(df_1, how="left", left_index=True, right_index=True)
             df_symbols = df[symbols]
             df_symbols = df_symbols.rank(axis=1,numeric_only=True,na_option="keep")
+            # df_symbols = ratio_dict[alpha_list[i]]*df_symbols
             if i == 0:
                 df_symbols_last = df_symbols
             else:
@@ -111,7 +238,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnu
 
     df_last_all = df.ix[n - 1]
     df_last_min = df[symbols].ix[n - 1]
-    max_symbols_list = [df_last_min.idxmax(), df_last_min.drop(labels=df_last_min.idxmax()).idxmax()]
+    max_symbols_list = [df_last_min.idxmax()]
     hold_symbols_list = buy_list[-1]
     aim_symbols_list = list(set(max_symbols_list).intersection(set(aim_symbols)))
     strong_symbols_list = []
@@ -158,22 +285,86 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnu
     # print(asset_list[-1])
     return multiple_factor(df,cash_list, asset_list, buy_list, coinnum_list, n+1, close_list, max_value_list, posittion, win_times, price_list)
 
+#
+# alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha050","Alpha.alpha051",
+#                       "Alpha.alpha069", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
 
-alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha028", "Alpha.alpha050","Alpha.alpha051",
-                      "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
-df = pick_coin(alpha_two_combine[0])
-print(df.head())
+
+ratio_dict = {"Alpha.alpha003": 0.316769, "Alpha.alpha014": 0.217690, "Alpha.alpha024": 0.254670, "Alpha.alpha028": 0.395825,
+              "Alpha.alpha050": 0.512964, "Alpha.alpha051": 0.512964, "Alpha.alpha052": 0.221608, "Alpha.alpha069": 1.029074,
+              "Alpha.alpha096": 0.223035, "Alpha.alpha128": 0.387375, "Alpha.alpha159": 0.455468, "Alpha.alpha167": 0.487710,
+              "Alpha.alpha175": 0.478983}
+aaa = "014050052069159167175"
+# alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha028", "Alpha.alpha050","Alpha.alpha051",
+#                       "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
+# alpha_two_combine = [("Alpha.alpha003","Alpha.alpha024","Alpha.alpha051", "Alpha.alpha052", "Alpha.alpha069",
+#                       "Alpha.alpha159", "Alpha.alpha167", "Alpha.alpha175")]
+# alpha_two_combine = [("Alpha.alpha069", "Alpha.alpha051", "Alpha.alpha167", "Alpha.alpha175", "Alpha.alpha018")]
+alpha_two_combine = [("Alpha.alpha069", "Alpha.alpha018", "Alpha.alpha050", "Alpha.alpha052", "Alpha.alpha055",
+                      "Alpha.alpha060", "Alpha.alpha071", "Alpha.alpha052")]
+temp_ratio_dict = {}
+df = pick_coin(alpha_two_combine[0], temp_ratio_dict)
+# print(df.head())
+# print("-"*20)
+# print(df.tail())
 
 for close in symbols_close:
-    df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
+    try:
+        df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
+    except :
+        pass
 
 df["date_time"] = df.index.values
 
 cash_list, asset_list, buy_list, coinnum_list, close_list, max_value_list, win_times = multiple_factor(df)
-df_result = pd.DataFrame({"cash": cash_list, "asset": asset_list}, index=df["date_time"])
+df_result = pd.DataFrame({"cash": cash_list, "asset": asset_list, "tickid": df["tickid"].values}, index=df["date_time"])
 print(df_result)
+df_result["date_time"] = pd.to_datetime(df_result.index.values)
+df_result_day = df_result.resample(rule="1d", on='date_time', label="left").apply({"asset": "last", "tickid": "last"})
+df_result_day["tickid"] = df_result_day["tickid"] - 14400*5
+# print(df_result_day.head())
+# print(len(df_result_day))
+data_k = pd.read_csv("/Users/wuyong/alldata/original_data/btcusdt_day_k.csv", index_col=0)
+# print(data_k.head())
+# print(len(data_k))
+data_k = data_k.merge(df_result_day, on="tickid", how="left")
+data_k = data_k[data_k["asset"] > 0]
+data_k.fillna(inplace=True, method="ffill")
+data_k["ma20"] = ta.EMA(data_k["close"].values, 20)
+data_k["ma60"] = ta.EMA(data_k["close"].values, 60)
+data_k["ma120"] = ta.EMA(data_k["close"].values, 120)
+print(data_k)
+print(len(data_k))
+candleData = np.column_stack([list(range(len(data_k))), data_k[["open", "high", "low", "close"]]])
+fig = plt.figure(figsize=(30, 12))
+ax = fig.add_axes([0.1, 0.3, 0.8, 0.6])
+mpf.candlestick_ohlc(ax, candleData, width=0.5, colorup='r', colordown='b')
+lns1 = ax.plot(data_k["date"].values, data_k["ma20"], label="ma20")
+lns2 = ax.plot(data_k["date"].values, data_k["ma60"], label="ma60")
+lns3 = ax.plot(data_k["date"].values, data_k["ma120"], label="ma120")
+plt.grid(True)
+plt.xticks(list(range(len(data_k))), list(data_k["date"].values))
+plt.xticks(rotation=85)
+plt.tick_params(labelsize=5)
+ax2 = ax.twinx()
+lns4 = ax2.plot(data_k["date"].values, data_k["asset"], label="asset", color="#8B0000")
+lns = lns1 + lns2 + lns3 + lns4
+labs = [l.get_label() for l in lns]
+ax.legend(lns, labs, loc=0)
+plt.show()
 
 
+
+
+# dataf = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + "usdtbtc" + "_" + "Alpha.alpha024" + "_gtja4h" + '.csv', index_col=0)
+# # print(dataf.tail())
+# dataf = dataf[dataf["tickid"] < 1529942400]
+# dataf.drop_duplicates(subset="tickid", keep="last", inplace=True)
+# index_values = list(dataf["close"].values)
+# # print(index_values)
+#
+#
+#
 # alpha_test_all = ["Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha024", "Alpha.alpha028", "Alpha.alpha050",
 #                   "Alpha.alpha051", "Alpha.alpha052", "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128",
 #                   "Alpha.alpha159", "Alpha.alpha167", "Alpha.alpha175"]
@@ -181,20 +372,44 @@ print(df_result)
 # alpha_two_combine = list(itertools.combinations(alpha_test_all,10))
 # alpha_two_combine = alpha_two_combine
 #
+# stat_ls = []
 # for n in range(len(alpha_two_combine)):
 #     df = pick_coin(alpha_two_combine[n])
+#     alpha_name = ""
+#     for name in alpha_two_combine[n]:
+#         alpha_name += name[-3:]
 #
 #     for close in symbols_close:
-#         df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
+#         try:
+#             df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
+#         except :
+#             pass
 #
 #     df["date_time"] = df.index.values
 #
 #     cash_list, asset_list, buy_list, coinnum_list, close_list, max_value_list, win_times = multiple_factor(df, cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnum_list=[{}],n=1,close_list=[[]],max_value_list=[0],posittion=1, win_times=0, price_list=[])
-#     df_result = pd.DataFrame({"cash": cash_list, "asset": asset_list}, index=df["date_time"])
+#     df_result = pd.DataFrame({"cash": cash_list, "asset": asset_list, "close": df["usdtbtc_close"].values}, index=df["date_time"])
+#     df_result["asset_diff"] = df_result["asset"].diff()
+#     df_result["date_time"] = pd.to_datetime(df_result.index)
+#     df_result["date_time"] = df_result.index
+#     df_result.index = range(len(df_result))
+#     df_result["net"] = df_result["asset"]
+#     # print(df_result)
+#     df_result["index"] = index_values
+#     # df_result["index_ma5"]=df["index_ma5"]
+#     # df_result["index_ma20"]=df["index_ma20"]
+#     df_result["date_time"] = pd.to_datetime(df_result["date_time"])
+#     # print(df_result[["net","asset_diff","buy","asset","date_time"]])
+#     result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 0, "multifactor" + alpha_name)
+#     result = [alpha_name] + result
+#     cols = ["alpha"] + cols
+#     stat_ls.append(result)
+#     print(stat_ls)
+#     print(cols)
 #     print(alpha_two_combine[n])
 #     print(df_result.iloc[-1, :])
 #     print("\n")
-
+#     exit()
 
 
 
