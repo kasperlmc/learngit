@@ -154,6 +154,7 @@ def get_max_coin(now_time, df_all, alpha=alpha_test):
                 Alpha = Alphas(df_temp)
                 df_temp[alpha[i]] = eval(alpha[i])()
                 result_dict_temp[symbol] = df_temp[alpha[i]].dropna().values[-1]
+        print(result_dict_temp)
         results.append(result_dict_temp)
     result_dict_last = {}
     for _ in results:

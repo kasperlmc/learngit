@@ -8,13 +8,8 @@ import socket
 import requests
 import pandas as pd
 
-# 显示所有列
-pd.set_option('display.max_columns', None)
-# 显示所有行
-pd.set_option('display.max_rows', None)
-
 pd.set_option('display.max_columns', 20)
-pd.set_option('display.max_rows', 300)
+pd.set_option('display.max_rows', 500)
 pd.set_option('display.width', 500)
 pd.set_option('display.max_colwidth', 100)
 print(socket.gethostname())
@@ -31,13 +26,14 @@ retry_count = 3
 exchange_url = common_url + 'exchanges?datatype=%d'
 exsymbol_url = common_url + 'symbols?exname=%s&datatype=%d'
 exkline_url = common_url + 'kline?exname=%s&symbol=%s&period=%s&starttime=%s&endtime=%s'
+exfuture_kline_url = common_url + 'future/kline?exname=%s&symbol=%s&period=%s&starttime=%s&endtime=%s&datatype=%d&symboltype=%d'
 
 hb_debug = 0
 if hb_debug == 1:
     migo = "http://127.0.0.1:8000"
 else:
     migo = 'https://mi.goupupupup.com'
-huobi_kline_url = migo + '/data/klines?symbol=%s&period=%s&starttime=%s&endtime=%s'
+huobi_kline_url = migo + '/data/klines?symbol=%s&period=%s&starttime=%s&endtime=%s&exname=%s'
 huobi_exchange_url = migo + '/data/symbols'
 
 spread_atr_url = common_url + 'huobi/fordaily/spread/atr?exchange=%s&symbol=%s&update_day_start=%s' \
@@ -279,7 +275,7 @@ def get_exchange(datatype=1):
         Parameters
         ------
           datatype:int
-                    数据类型，取值  1-K线
+                    数据类型，取值  1-K线, 3-合约k线
         return
         -------
           errcode:int
@@ -313,7 +309,7 @@ def get_exsymbol(exchange, datatype=1):
           exchange:string
                     交易所名称
           datatype:int
-                    数据类型，取值  1-K线
+                    数据类型，取值  1-K线；3-合约k线
 
         return
         -------
@@ -409,6 +405,15 @@ def get_exsymbol_kline_old(exchange, symbol, period, startstr, endstr):
 
 
 def get_exsymbol_kline(exchange, symbol, period, startstr, endstr):
+    """
+    获取现货历史kline线
+    :param exchange: string 交易所名称
+    :param symbol: string 币对名称
+    :param period: string 时间级别
+    :param startstr: string 起始时间
+    :param endstr: string 结束时间
+    :return:
+    """
     try:
         tmp = datetime.datetime.strptime(startstr, "%Y-%m-%d")
         start = int(tmp.strftime("%s"))
@@ -466,6 +471,75 @@ def get_exsymbol_kline(exchange, symbol, period, startstr, endstr):
     raise IOError("无法连接")
 
 
+def get_exsymbol_future_kline(exchange, symbol, period, startstr, endstr, datatype=0, symboltype=0):
+    """
+    获取合约Kline线
+    :param symboltype: 查询用，例：0对应xrp，将取出所有符合条件的xrp数据(数据已拼接)；1对应xrph19，只取出该币对的数据
+    :param exchange: string 交易所名称
+    :param symbol: string 币对名称
+    :param period: string 时间级别
+    :param startstr: string 起始时间
+    :param endstr: string 结束时间
+    :param datatype: 默认0：不区分合约类型：获取当前币对所有；1：当周；2：次周；3：季度；4：永续，5：半年
+    :return:
+    """
+    try:
+        tmp = datetime.datetime.strptime(startstr, "%Y-%m-%d")
+        start = int(tmp.strftime("%s"))
+        tmp = datetime.datetime.strptime(endstr, "%Y-%m-%d")
+        end = int(tmp.strftime("%s"))
+    except Exception as e:
+        print(e)
+        raise TypeError('ktype input error.')
+
+    try:
+        stop_flag = 0
+        data_list = []
+        while 1:
+            ss_time = time.time()
+            url = exfuture_kline_url % (exchange, symbol, period, start, end, datatype, symboltype)
+            print(url)  # 注释掉
+            r = requests.get(url, timeout=10, headers={"Accept-encoding": "gzip"})
+            l = r.json()
+            ee_time = time.time()
+            print("url time :" + str(ee_time - ss_time))  # test expend time
+            errcode = l['result']
+            errmsg = l['description']
+            if not l['data']['items'] and (data_list or len(data_list) == 0):
+                break
+
+            if errcode != 0:
+                return errcode, errmsg, None
+            # print(l['data']['items'][-1][0])
+            if stop_flag == l['data']['items'][-1][0]:
+                break
+            else:
+                ssss_time = time.time()
+                # data_dict = {**data_dict, **l['data']}
+                data_list.extend(l['data']['items'])
+                start = l['data']['items'][-1][0]
+                stop_flag = l['data']['items'][-1][0]
+                eeee_time = time.time()
+                # print("list:" + str(eeee_time - ssss_time))  # test expend time
+        sss_time = time.time()
+        df = pd.DataFrame(data_list, columns=['tickid', 'open', 'high', 'low', 'close', 'volume', 'amount', 'type'])
+
+        df['date'] = df['tickid'].map(timestamp2str)
+
+        # get a list of columns
+        cols = list(df)
+        # move the column to head of list using index, pop and insert
+        cols.insert(0, cols.pop(cols.index('date')))
+        df = df.ix[:, cols]
+        eee_time = time.time()
+        # print("df:" + str(eee_time-sss_time))  # test expend time
+        return errcode, errmsg, df
+    except Exception as e:
+        print(e)
+
+    raise IOError("无法连接")
+
+
 def get_huobi_ontime_kline(symbol, period, startstr, endstr):
     """
         获取交易所币对K线
@@ -500,7 +574,7 @@ def get_huobi_ontime_kline(symbol, period, startstr, endstr):
         print(e)
         raise TypeError('ktype input error.')
 
-    url = huobi_kline_url % (symbol, period, start, end)
+    url = huobi_kline_url % (symbol, period, start, end, 'HUOBI')
     for _ in range(retry_count):
         try:
             r = requests.get(url, timeout=10)
@@ -564,7 +638,7 @@ def str_time_to_timestamp(str, len):
         for time_str in ['%Y-%m-%d %H:%M:%S', "%Y-%m-%d %H:%M", "%Y-%m-%d %H", "%Y-%m-%d"]:
             try:
                 tmp = datetime.datetime.strptime(str, time_str)
-            except :
+            except:
                 continue
         if len == 13:
             timestamp = int(tmp.strftime("%s")) * 1000
@@ -581,55 +655,49 @@ def str_time_to_timestamp(str, len):
 
 
 if __name__ == '__main__':
-
-    errcode, errmsg, result = get_exsymbol("BIAN")
-    btc_list = [x for x in result if x[-3:] == "btc"]
-    # print(len(btc_list))
-    # print(btc_list[0])
-    # btc_list = ["ethbtc"]
-
-    # for i in range(len(btc_list)):
-    #     errcode, errmsg, df = get_exsymbol_kline("BIAN", btc_list[i], "4h", "2018-01-01", "2019-02-15")
-    #     # 显示所有列
-    #     pd.set_option('display.max_columns', None)
-    #     # 显示所有行
-    #     pd.set_option('display.max_rows', None)
-    #     print(btc_list[i])
-    #     # print(df.head())
-    #     # df[['high', 'low', 'close', 'open']] = df.loc[:, ['high', 'low', 'close', 'open']] \
-    #     #     .apply(lambda x: 1 / x)
-    #     # df = df.rename(columns={'high': 'low', 'low': 'high'})
-    #     print(df.head())
-    #     print(df.tail())
-    #     df.to_csv("/Users/wuyong/alldata/original_data/BIAN_" + btc_list[i] + "_4h_2018-01-01_2019-02-14.csv")
-    #     # df.to_csv("/Users/wuyong/alldata/original_data/BIAN_"+"usdtbtc"+"_4h_2018-01-01_2019-01-09.csv")
+    # errcode, errmsg, result = get_exchange(datatype=3)
+    # print(result)
+    #
+    # errcode, errmsg, result = get_exsymbol("BITMEX", datatype=3)
+    # print(result)
 
     # s_time = time.time()
-    # errcode, errmsg, df = get_exsymbol_kline("BIAN", "adabtc", "4h", "2018-06-21", "2018-12-29")
-    errcode, errmsg, df = get_exsymbol_kline("BITFINEX", "btcusdt", "1d", "2016-01-01", "2019-02-15")
+    # errcode, errmsg, df = get_exsymbol_kline("BIAN", "ethbtc", "1h", "2019-01-04", "2019-12-19")
+    errcode, errmsg, df = get_exsymbol_kline("BIAN", "ethbtc", "1m", "2019-02-01", "2019-02-02")
+    # # errcode, errmsg, df = get_exsymbol_kline("BIAN", "neobtc", "1d", "2015-05-15", "2018-10-29")
+    print(str(len(df)))
     print(df.head())
     print(df.tail())
-    df.to_csv("/Users/wuyong/alldata/original_data/btcusdt_day_k.csv")
-
-    # symbols = ["btcusdt", "ethusdt", "xrpusdt", "trxusdt", "eosusdt", "zecusdt", "ltcusdt",
-    #            "etcusdt", "etpusdt", "iotusdt", "rrtusdt", "xmrusdt", "dshusdt", "avtusdt",
-    #            "omgusdt", "sanusdt", "qtmusdt", "edousdt", "btgusdt", "neousdt", "zrxusdt",
-    #            "tnbusdt", "funusdt", "mnausdt", "sntusdt", "gntusdt"]
-    # for i in range(len(symbols)):
-    #     errcode, errmsg, df = get_exsymbol_kline("BIAN", symbols[i], "4h", "2018-12-21", "2018-12-29")
-    #     print(symbols[i])
-    #     print(df.tail())
-    # df.to_csv("/Users/wuyong/alldata/original_data/BITMEX_.bxbt_4h_2018-06-20_2018-12-26.csv")
-    # # errcode, errmsg, df = get_exsymbol_kline("BIAN", "neobtc", "1d", "2015-05-15", "2018-10-29")
-    # print(str(len(df)), df[0:10000])
+    print(type(df["date"].values[0]))
+    print(df[(df["date"] > "2019-02-01 00:03:00") & (df["date"] < "2019-02-01 01:03:00")])
+    # print(str(len(df)), df[0:21350])
     # e_time = time.time()
     # print("total:"+str(e_time-s_time))
-    #
+    # print(len(df))
+    # print(type(df))
+    # print(df["date"].values[0], type(df["date"].values[0]))
+    # df["date"] = [datetime.datetime.strptime(pub_time, "%Y-%m-%d %H:%M:%S") for pub_time in df["date"].values]
+    # time_delta = datetime.timedelta(hours=8)
+    # print(type(time_delta))
+    # print(df.head())
+    # print(df.tail())
+    # df["date"] = df["date"]-time_delta
+    # print(df.head())
+    # print(df.tail())
+    # df.to_csv("/Users/wuyong/alldata/original_data/bitfinex_btcusdt_1h_all.csv")
+
+    # s_time = time.time()
+    # errcode, errmsg, df = get_exsymbol_future_kline("BITMEX", "xrpu18", "1m", "2017-01-01", "2019-02-26", 0, 1)
+    # errcode, errmsg, df = get_exsymbol_future_kline("OKEX", "bch-usd-190118", "1m", "2018-01-20", "2019-02-26", 0)
+    # df.to_csv('xrpu18.csv')
+    # e_time = time.time()
+    # print("total:" + str(e_time - s_time))
+
     # errcode, errmsg, result = get_huobi_exchange()
     # print(result)
 
-    # errcode, errmsg, result = get_huobi_ontime_kline('iotusdt', '4hour', '2018-12-18 00:30', '2018-12-24 10:30')
-    # print(result)
+    # errcode, errmsg, result = get_huobi_ontime_kline('btcusdt', '4hour', '2018-12-10 00:30', '2018-12-25 00:30')
+    # print(result[0:10])
     #
     # errcode, errmsg, result = get_spread_atr('BIAN', 'adausdt', '2018-08-01', '2018-09-12')
     # print(result)
@@ -642,7 +710,7 @@ if __name__ == '__main__':
 
     # errcode, errmsg, result = get_position_data('BITMEX', 'xbtusd', '1h', '2018-08-02 16:26')
     # print(result)
-    #
+
     # errcode, errmsg, result = get_trades_data('BIAN', 'btcusdt', '2018-12-01 01:00')
     # # errcode, errmsg, result = get_trades_data('POLONIEX', 'usdt_btc', '2018-09-02 16:26')
     # print(result)
@@ -651,3 +719,7 @@ if __name__ == '__main__':
 
     # errcode, errmsg, result = get_addrs_tx_history_data('btc', 0, timeStr='2017-01-01')
     # print(result)
+
+    # print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(1545646500)))
+    #
+    # print(pd.to_datetime(1545646500,unit='s') + pd.Timedelta(hours=8))

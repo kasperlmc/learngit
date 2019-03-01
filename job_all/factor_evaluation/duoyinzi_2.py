@@ -46,10 +46,10 @@ import numpy as np
 from lib.factors_gtja import *
 import os
 import talib as ta
-import itertools
-import logging
+from lib.dataapi import *
 import copy
 import time
+import datetime
 import mpl_finance as mpf
 
 
@@ -195,7 +195,7 @@ aim_symbols = ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc", "bchabcbtc", "
 symbols_close = [x+"_close" for x in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc", "bchabcbtc", "bchsvbtc", "ontbtc", "ltcbtc", "adabtc", "bnbbtc"]]
 
 
-def pick_coin(alpha_list, ratio_dict):
+def pick_coin(alpha_list):
     df_symbols_last = None
     df = None
     for i in range(len(alpha_list)):
@@ -217,8 +217,7 @@ def pick_coin(alpha_list, ratio_dict):
                                          symbol + "_open": data["open"].values}, index=data["date"].values)
                     df = df.merge(df_1, how="left", left_index=True, right_index=True)
             df_symbols = df[symbols]
-            df_symbols = df_symbols.rank(axis=1,numeric_only=True,na_option="keep")
-            # df_symbols = ratio_dict[alpha_list[i]]*df_symbols
+            df_symbols = df_symbols.rank(axis=1, numeric_only=True,na_option="keep")
             if i == 0:
                 df_symbols_last = df_symbols
             else:
@@ -231,10 +230,30 @@ def pick_coin(alpha_list, ratio_dict):
     return df
 
 
+def stop_loss(hold_symbles_list, coinnum_dict_now, price_values, n=1, max_price=0, cash_now=0):
+    if n == len(price_values):
+        return hold_symbles_list, coinnum_dict_now, max_price, cash_now
+
+    elif (max_price-price_values[n])/max_price >= 0.1:
+        cash_now = coinnum_dict_now[hold_symbles_list[0]]*price_values[n]*(1-slippage)
+        coinnum_dict_now[hold_symbles_list[0]] = 0
+        hold_symbles_list = []
+        max_price = 0
+        print("10%止损")
+        return hold_symbles_list, coinnum_dict_now, max_price, cash_now
+
+    else:
+        if max_price < max(price_values[n], price_values[n-1]):
+            max_price = max(price_values[n], price_values[n-1])
+        else:
+            pass
+        return stop_loss(hold_symbles_list, coinnum_dict_now, price_values, n+1, max_price, cash_now)
+
+
 @tail_call_optimized
-def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnum_list=[{}],n=1,close_list=[[]],max_value_list=[0],posittion=1, win_times=0, price_list=[]):
+def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnum_list=[{}],n=1,close_list=[[]],max_price_list=[0],posittion=1):
     if n == len(df):
-        return cash_list, asset_list, buy_list, coinnum_list, close_list, max_value_list, win_times
+        return cash_list, asset_list, buy_list, coinnum_list, close_list, max_price_list
 
     df_last_all = df.ix[n - 1]
     df_last_min = df[symbols].ix[n - 1]
@@ -242,14 +261,15 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnu
     hold_symbols_list = buy_list[-1]
     aim_symbols_list = list(set(max_symbols_list).intersection(set(aim_symbols)))
     strong_symbols_list = []
+
     for y in range(len(aim_symbols_list)):
         if df_last_all[aim_symbols_list[y]+"_close"] > df_last_all[aim_symbols_list[y]+"_close25"]:
             strong_symbols_list.append(aim_symbols_list[y])
+
     buy_symbols_list = list(set(strong_symbols_list).difference(set(hold_symbols_list)))
     sell_symbols_list = list(set(hold_symbols_list).difference(set(aim_symbols_list)))
     df_now_all = df.ix[n]
     cash_now = cash_list[-1]
-    # print(df.ix[n].date_time, max_symbols_list, hold_symbols_list, buy_symbols_list, sell_symbols_list)
     sell_symbols_list = sorted(sell_symbols_list)
     for i in range(len(sell_symbols_list)):
         sell_price = df_now_all[sell_symbols_list[i] + "_open"] * (1 - slippage)
@@ -275,25 +295,47 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnu
     for a in range(len(hold_symbols_list)):
         coinnum_dict_now[hold_symbols_list[a]] = coinnum_dict_old[hold_symbols_list[a]]
 
+    if len(hold_symbols_list) > 0:
+        if hold_symbols_list == buy_list[-1]:
+            startdate = df_now_all["date_time"]
+            startdate = datetime.datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
+            time_delta = datetime.timedelta(days=1)
+            time_delta1 = datetime.timedelta(hours=4)
+            enddate = startdate+time_delta
+            enddate1 = startdate+time_delta1
+            errcode, errmsg, df_4h_1m = get_exsymbol_kline("BIAN", hold_symbols_list[0], "1m", str(startdate)[:10], str(enddate)[:10])
+            price_values = df_4h_1m[(df_4h_1m["date"] > str(startdate)) & (df_4h_1m["date"] < str(enddate1))]["open"].values
+            hold_symbols_list, coinnum_dict_now, max_price, cash_now = stop_loss(hold_symbols_list, coinnum_dict_now, price_values, n=1, max_price=max_price_list[-1], cash_now=cash_now)
+        else:
+            startdate = df_now_all["date_time"]
+            startdate = datetime.datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
+            time_delta = datetime.timedelta(days=1)
+            time_delta1 = datetime.timedelta(hours=4)
+            enddate = startdate + time_delta
+            enddate1 = startdate + time_delta1
+            errcode, errmsg, df_4h_1m = get_exsymbol_kline("BIAN", hold_symbols_list[0], "1m", str(startdate)[:10], str(enddate)[:10])
+            price_values = df_4h_1m[(df_4h_1m["date"] > str(startdate)) & (df_4h_1m["date"] < str(enddate1))]["open"].values
+            hold_symbols_list, coinnum_dict_now, max_price, cash_now = stop_loss(hold_symbols_list, coinnum_dict_now, price_values, n=1, max_price=0, cash_now=cash_now)
+        max_price_list.append(max_price)
+    else:
+        pass
+
+    # 更新买入标的列表和买入数量列表
     buy_list.append(hold_symbols_list)
     coinnum_list.append(coinnum_dict_now)
+
+
     cash_list.append(cash_now)
     asset = cash_list[-1]
     for b in range(len(hold_symbols_list)):
         asset = asset + coinnum_dict_now[hold_symbols_list[b]]*df_now_all[hold_symbols_list[b] + "_close"]
     asset_list.append(asset)
-    # print(asset_list[-1])
-    return multiple_factor(df,cash_list, asset_list, buy_list, coinnum_list, n+1, close_list, max_value_list, posittion, win_times, price_list)
+    return multiple_factor(df,cash_list, asset_list, buy_list, coinnum_list, n+1, close_list, max_price_list, posittion)
 
 #
 # alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha050","Alpha.alpha051",
 #                       "Alpha.alpha069", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
 
-
-ratio_dict = {"Alpha.alpha003": 0.316769, "Alpha.alpha014": 0.217690, "Alpha.alpha024": 0.254670, "Alpha.alpha028": 0.395825,
-              "Alpha.alpha050": 0.512964, "Alpha.alpha051": 0.512964, "Alpha.alpha052": 0.221608, "Alpha.alpha069": 1.029074,
-              "Alpha.alpha096": 0.223035, "Alpha.alpha128": 0.387375, "Alpha.alpha159": 0.455468, "Alpha.alpha167": 0.487710,
-              "Alpha.alpha175": 0.478983}
 aaa = "014050052069159167175"
 # alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha028", "Alpha.alpha050","Alpha.alpha051",
 #                       "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
@@ -302,11 +344,7 @@ aaa = "014050052069159167175"
 # alpha_two_combine = [("Alpha.alpha069", "Alpha.alpha051", "Alpha.alpha167", "Alpha.alpha175", "Alpha.alpha018")]
 alpha_two_combine = [("Alpha.alpha069", "Alpha.alpha018", "Alpha.alpha050", "Alpha.alpha052", "Alpha.alpha055",
                       "Alpha.alpha060", "Alpha.alpha071", "Alpha.alpha052")]
-temp_ratio_dict = {}
-df = pick_coin(alpha_two_combine[0], temp_ratio_dict)
-# print(df.head())
-# print("-"*20)
-# print(df.tail())
+df = pick_coin(alpha_two_combine[0])
 
 for close in symbols_close:
     try:
@@ -316,16 +354,17 @@ for close in symbols_close:
 
 df["date_time"] = df.index.values
 
-cash_list, asset_list, buy_list, coinnum_list, close_list, max_value_list, win_times = multiple_factor(df)
-df_result = pd.DataFrame({"cash": cash_list, "asset": asset_list, "tickid": df["tickid"].values}, index=df["date_time"])
-print(df_result)
+cash_list, asset_list, buy_list, coinnum_list, close_list, max_price_list = multiple_factor(df)
+df_result = pd.DataFrame({"cash": cash_list, "asset": asset_list, "tickid": df["tickid"].values, "buy": buy_list}, index=df["date_time"])
+print(df_result.tail())
+
+
 df_result["date_time"] = pd.to_datetime(df_result.index.values)
 df_result_day = df_result.resample(rule="1d", on='date_time', label="left").apply({"asset": "last", "tickid": "last"})
 df_result_day["tickid"] = df_result_day["tickid"] - 14400*5
 # print(df_result_day.head())
 # print(len(df_result_day))
 data_k = pd.read_csv("/Users/wuyong/alldata/original_data/btcusdt_day_k.csv", index_col=0)
-# print(data_k.head())
 # print(len(data_k))
 data_k = data_k.merge(df_result_day, on="tickid", how="left")
 data_k = data_k[data_k["asset"] > 0]
@@ -333,8 +372,6 @@ data_k.fillna(inplace=True, method="ffill")
 data_k["ma20"] = ta.EMA(data_k["close"].values, 20)
 data_k["ma60"] = ta.EMA(data_k["close"].values, 60)
 data_k["ma120"] = ta.EMA(data_k["close"].values, 120)
-print(data_k)
-print(len(data_k))
 candleData = np.column_stack([list(range(len(data_k))), data_k[["open", "high", "low", "close"]]])
 fig = plt.figure(figsize=(30, 12))
 ax = fig.add_axes([0.1, 0.3, 0.8, 0.6])
@@ -353,15 +390,15 @@ labs = [l.get_label() for l in lns]
 ax.legend(lns, labs, loc=0)
 plt.show()
 
+exit()
 
 
-
-# dataf = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + "usdtbtc" + "_" + "Alpha.alpha024" + "_gtja4h" + '.csv', index_col=0)
-# # print(dataf.tail())
-# dataf = dataf[dataf["tickid"] < 1529942400]
-# dataf.drop_duplicates(subset="tickid", keep="last", inplace=True)
-# index_values = list(dataf["close"].values)
-# # print(index_values)
+dataf = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + "tusdbtc" + "_" + "Alpha.alpha024" + "_gtja4h" + '.csv', index_col=0)
+print(dataf.tail())
+dataf = dataf[dataf["tickid"] > 1530093600]
+dataf.drop_duplicates(subset="tickid", keep="last", inplace=True)
+index_values = list(dataf["close"].values)
+# print(index_values)
 #
 #
 #
@@ -370,47 +407,47 @@ plt.show()
 #                   "Alpha.alpha159", "Alpha.alpha167", "Alpha.alpha175"]
 #
 # alpha_two_combine = list(itertools.combinations(alpha_test_all,10))
-# alpha_two_combine = alpha_two_combine
+alpha_two_combine = [("Alpha.alpha069", "Alpha.alpha018", "Alpha.alpha050", "Alpha.alpha052", "Alpha.alpha055",
+                      "Alpha.alpha060", "Alpha.alpha071", "Alpha.alpha052")]
 #
-# stat_ls = []
-# for n in range(len(alpha_two_combine)):
-#     df = pick_coin(alpha_two_combine[n])
-#     alpha_name = ""
-#     for name in alpha_two_combine[n]:
-#         alpha_name += name[-3:]
-#
-#     for close in symbols_close:
-#         try:
-#             df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
-#         except :
-#             pass
-#
-#     df["date_time"] = df.index.values
-#
-#     cash_list, asset_list, buy_list, coinnum_list, close_list, max_value_list, win_times = multiple_factor(df, cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnum_list=[{}],n=1,close_list=[[]],max_value_list=[0],posittion=1, win_times=0, price_list=[])
-#     df_result = pd.DataFrame({"cash": cash_list, "asset": asset_list, "close": df["usdtbtc_close"].values}, index=df["date_time"])
-#     df_result["asset_diff"] = df_result["asset"].diff()
-#     df_result["date_time"] = pd.to_datetime(df_result.index)
-#     df_result["date_time"] = df_result.index
-#     df_result.index = range(len(df_result))
-#     df_result["net"] = df_result["asset"]
-#     # print(df_result)
-#     df_result["index"] = index_values
-#     # df_result["index_ma5"]=df["index_ma5"]
-#     # df_result["index_ma20"]=df["index_ma20"]
-#     df_result["date_time"] = pd.to_datetime(df_result["date_time"])
-#     # print(df_result[["net","asset_diff","buy","asset","date_time"]])
-#     result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 0, "multifactor" + alpha_name)
-#     result = [alpha_name] + result
-#     cols = ["alpha"] + cols
-#     stat_ls.append(result)
-#     print(stat_ls)
-#     print(cols)
-#     print(alpha_two_combine[n])
-#     print(df_result.iloc[-1, :])
-#     print("\n")
-#     exit()
+stat_ls = []
+for n in range(len(alpha_two_combine)):
+    df = pick_coin(alpha_two_combine[n])
+    alpha_name = ""
+    for name in alpha_two_combine[n]:
+        alpha_name += name[-3:]
 
+    for close in symbols_close:
+        try:
+            df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
+        except :
+            pass
+
+    df["date_time"] = df.index.values
+
+    cash_list, asset_list, buy_list, coinnum_list, close_list, max_price_list = multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnum_list=[{}],n=1,close_list=[[]],max_price_list=[0],posittion=1)
+    df_result = pd.DataFrame({"cash": cash_list, "asset": asset_list, "tickid": df["tickid"].values, "buy": buy_list}, index=df["date_time"])
+    df_result["asset_diff"] = df_result["asset"].diff()
+    df_result["date_time"] = pd.to_datetime(df_result.index)
+    df_result["date_time"] = df_result.index
+    df_result.index = range(len(df_result))
+    df_result["net"] = df_result["asset"]
+    # print(df_result)
+    df_result["index"] = index_values
+    df_result["close"] = index_values
+    df_result["date_time"] = pd.to_datetime(df_result["date_time"])
+    # print(df_result[["net","asset_diff","buy","asset","date_time"]])
+    result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 0, "multifactor" + alpha_name)
+    result = [alpha_name] + result
+    cols = ["alpha"] + cols
+    stat_ls.append(result)
+    print(alpha_two_combine[n])
+    print(df_result.iloc[-1, :])
+    print("\n")
+
+df_last = pd.DataFrame(stat_ls, columns=cols)
+df_last = df_last.sort_values(by="ret_ratio", ascending=False)
+print(df_last)
 
 
 

@@ -610,8 +610,6 @@ for i in range(len(alpha_test_all)):
     cols = cols+symbols
     cols = ["trade_times", "trade_times_oct", "alpha", "win_times", "corr"]+cols
     stat_ls.append(result)
-    # df_last=pd.DataFrame(stat_ls, columns=cols)
-    # print(df_last)
 
 df_last = pd.DataFrame(stat_ls, columns=cols)
 df_last = df_last.sort_values(by="ret_ratio", ascending=False)

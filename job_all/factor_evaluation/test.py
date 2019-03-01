@@ -42,12 +42,37 @@ l1 = [1,2,3,4]
 a = l1[0] if len(l1) > 0 else None
 print(a)
 
-num = 250*4
+num = 9681
 re_l = []
 for i in range(60, num-20, 20):
-    for x in range(50):
-        re_l.append(i)
+    re_l.append(i)
 print(len(re_l))
+
+
+coin = "btcusdt"
+data = pd.read_csv("/Users/wuyong/alldata/original_data/bitfinex_" + coin + "_1h_all.csv", index_col=0)
+print(len(data))
+print(data.head(30))
+data.fillna(method="ffill", inplace=True)
+data["date_time"] = pd.to_datetime(data["date"])
+
+
+data = data.resample(rule="4h", on='date_time',label="left", closed="left").apply({'open': 'first', 'high': 'max',
+                                                                                     'low': 'min', 'close': 'last',
+                                                                                     'volume': 'sum', "amount": "sum",
+                                                                                     "tickid": "first"})
+
+data["date"] = data.index.values
+print(len(data))
+print(data.head(10))
+data.to_csv("/Users/wuyong/alldata/original_data/bitfinex_btcusdt_4h_all.csv")
+
+
+
+
+
+
+
 
 
 
