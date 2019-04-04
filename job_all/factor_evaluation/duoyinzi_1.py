@@ -61,11 +61,7 @@ symbols = ["ethbtc", "xrpbtc", "mdabtc", "eosbtc", "xlmbtc", "tusdbtc", "ltcbtc"
            "stratbtc", "trxbtc", "adabtc", "iotabtc", "xmrbtc", "bnbbtc", "dashbtc",
            "xembtc", "etcbtc", "neobtc", "ontbtc", "zecbtc", "wavesbtc", "btgbtc",
            "vetbtc", "qtumbtc", "omgbtc", "zrxbtc", "gvtbtc", "bchabcbtc", "bchsvbtc"]
-# symbols = sorted(symbols)
-# symbols = ["ethbtc", "xrpbtc", "adabtc", "eosbtc", "bnbbtc", "tusdbtc", "ltcbtc",
-#            "bchabcbtc", "trxbtc", "bchsvbtc", "ontbtc", "mdabtc", "xmrbtc", "dashbtc",
-#            "xembtc", "etcbtc", "neobtc", "xlmbtc", "zecbtc", "wavesbtc", "btgbtc",
-#            "vetbtc", "qtumbtc", "omgbtc", "zrxbtc", "gvtbtc", "stratbtc", "iotabtc"]
+
 aim_symbols = ["ethbtc", "eosbtc", "xrpbtc", "trxbtc","tusdbtc", "bchabcbtc", "bchsvbtc", "ontbtc", "ltcbtc", "adabtc", "bnbbtc"]
 symbols_close = [x+"_close" for x in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc", "bchabcbtc", "bchsvbtc", "ontbtc", "ltcbtc", "adabtc", "bnbbtc"]]
 
@@ -173,9 +169,6 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
         return cash_list, asset_list, buy_list, btcnum_list, close_list, max_value_list, win_times
 
     df_last_min = df[symbols].ix[n-1]
-    # df_last_min.dropna(inplace=True)
-    # df_last_min.sort_values(inplace=True)
-    # df_last_min = (df_last_min - df_last_min.median()).abs()
     min_idx = df_last_min.idxmax()
     max_value = df_last_min.max()
     max_value_list.append(max_value)
@@ -239,23 +232,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[np.nan],bt
                     cash_get = sell_price * sell_amount
                     if sell_price > price_list[-1] and sell_amount > 0:
                         win_times += 1
-                    # asset_diff=sell_price*sell_amount-asset_chg[-1]
-                    # asset_diff=np.sign(asset_diff)
-                    # if asset_diff<0:
-                    #     posittion = posittion + asset_diff * 0.3
-                    # else:
-                    #     posittion=posittion+asset_diff*0.2
-                    # posittion=max(posittion,0.05)
-                    # posittion=min(posittion,1)
                     df_last_all = df.ix[n - 1]
-                    # df_close = df[symbols_close].ix[n - 2:n - 1]
-                    # df_close_diff = df_close.diff()
-                    # df_close_diff = df_close_diff.ix[n - 1].values
-                    # print(df_close_diff)
-                    # print(len(df_close_diff[df_close_diff > 0]))
-                    # print(len(df_close_diff[df_close_diff > -9999999]))
-                    # print(len(df_close_diff[df_close_diff>0]))
-                    # length_diff = len(df_close_diff[df_close_diff > -9999999])
                     if df_last_all[min_idx+"_close"] > df_last_all[min_idx+"_close25"] and (df_last_all["position"] == 1 or True):
                         posittion = 1
                     else:
@@ -448,11 +425,7 @@ def summary_net(net_df, plot_in_loops,alpha):
     month_ret = month_profit(net_df)
     # 转换成日净值
     net_df.set_index('date_time', inplace=True)
-    # print(net_df)
-    # print(len(net_df))
     net_df = net_df.resample(rule='1D').apply({"net": "last", "index": "last"})
-    # net_df.reset_index(inplace=True)
-    # print(net_df.asfreq())
     net_df.dropna(how="all", inplace=True)
 
     # 计算汇总
@@ -492,19 +465,15 @@ def summary_net(net_df, plot_in_loops,alpha):
     return result, cols
 
 
-df_alpha = pd.read_csv("/Users/wuyong/alldata/factor_writedb/factor_stra_4h/factor_result.csv", index_col=0)
+df_alpha = pd.read_csv("/Users/wuyong/alldata/factor_writedb/factor_stra_4h/factor_result_allfactor.csv", index_col=0)
 alpha_test_all = list(df_alpha["alpha"].values)
 
 data_result = pd.read_csv("/Users/wuyong/alldata/factor_writedb/factor_stra_4h/cor_result.csv", index_col=0)
-# print(list(itertools.combinations(alpha_test_all,2)))
 alpha_two_combine = list(itertools.combinations(alpha_test_all, 2))
 print(len(alpha_two_combine))
-# alpha_two_combine = alpha_two_combine[:10]
-# alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha028", "Alpha.alpha050","Alpha.alpha051",
-#                       "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
 
 
-alpha_combine_base = ["Alpha.alpha069", "Alpha.alpha055", "Alpha.alpha050", "Alpha.alpha018", "Alpha.alpha118"]
+alpha_combine_base = ["Alpha.alpha069", "Alpha.alpha055", "Alpha.alpha050", "Alpha.alpha019", "Alpha.alpha218"]
 stat_ls = []
 for i in range(len(alpha_test_all)):
     alpha_test = alpha_combine_base + [alpha_test_all[i]]
@@ -513,16 +482,7 @@ for i in range(len(alpha_test_all)):
     alpha_name = ""
     for name in alpha_test:
         alpha_name += name[-3:]
-    alpha_two_combine_corr = list(itertools.combinations(list(alpha_test), 2))
-    sum_corr = 0
-    for i in range(len(alpha_two_combine_corr)):
-        try:
-            corr = data_result[data_result.index == str(alpha_two_combine_corr[i])]["corr"].values[0]
-            corr = abs(corr)
-            sum_corr += corr
-        except IndexError:
-            corr = 1
-            sum_corr += corr
+
     df = pick_coin(alpha_test)
     df["date_time"] = df.index
     data_day = pd.read_csv("/Users/wuyong/alldata/original_data/day_position.csv", index_col=0)
@@ -533,15 +493,10 @@ for i in range(len(alpha_test_all)):
     df.index = df["index"]
     # 计算出资产组合对比指标
     dataf = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + "tusdbtc" + "_" + alpha_test[0] + "_gtja4h" + '.csv',index_col=0)
-    # print(dataf.tail())
     dataf = dataf[(dataf["tickid"] > 1530093600) & (dataf["tickid"] < 2547049600)]
     dataf.drop_duplicates(subset="tickid", keep="last", inplace=True)
     index_values = list(dataf["close"].values)
-    # print(index_values)
     df["index"] = np.array(index_values)
-    # print(df["index"])
-    # df["index"] = dataf["close"]
-    # print(df["index"])
     for close in symbols_close:
         try:
             df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
@@ -564,7 +519,6 @@ for i in range(len(alpha_test_all)):
     df_result["asset_diff"] = df_result["asset"].diff()
     df_result["date_time"] = pd.to_datetime(df_result.index)
     df_result_oct = df_result[df_result["date_time"] > pd.to_datetime("2018-10-01 00:00:00")]
-    # print(df_result_oct.head())
     trade_times_oct = df_result_oct["coinnum"].diff().values
     trade_times_oct = len(np.where(trade_times_oct != 0)[0])-1
     trade_times = df_result["coinnum"].diff().values
@@ -579,36 +533,23 @@ for i in range(len(alpha_test_all)):
     sum_ret_symbol = []
     for i in symbols:
         df_mid1 = df_result[df_result["buy"] == i]
-        # print(df_mid1)
-        # sum_ret_symbol.append(df_mid1[df_mid1["buy"]==i]["asset_diff"].sum())
         index_list = df_mid1.index
-        # print(type(index_list))
-        # print(index_list)
-        # print(index_list+1)
         index_list = list(set(list(index_list)+list(index_list+1)))
         index_list = sorted(index_list)
-        # print(df_result.ix[index_list][["buy","asset_diff"]])
         df_mid2 = df_result.ix[index_list][["buy", "asset_diff"]]
-        # print(df_mid2.dropna(how="all"))
         df_mid2.dropna(how="all", inplace=True)
-        # print(df_mid2)
         df_mid2.fillna("x", inplace=True)
         df_mid2 = df_mid2[(df_mid2["buy"] == i) | (df_mid2["buy"] == "x")]
         sum_ret_symbol.append(df_mid2["asset_diff"].sum())
-        # exit()
 
     df_result["net"] = df_result["asset"]
-    # print(df_result)
     df_result["index"] = df["index"]
-    # df_result["index_ma5"]=df["index_ma5"]
-    # df_result["index_ma20"]=df["index_ma20"]
     df_result["date_time"] = pd.to_datetime(df_result["date_time"])
-    # print(df_result[["net","asset_diff","buy","asset","date_time"]])
     result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 0, "multifactor"+alpha_name)
     result = result+sum_ret_symbol
-    result = [trade_times, trade_times_oct, alpha_name, win_times, sum_corr]+result
+    result = [trade_times, trade_times_oct, alpha_name, win_times]+result
     cols = cols+symbols
-    cols = ["trade_times", "trade_times_oct", "alpha", "win_times", "corr"]+cols
+    cols = ["trade_times", "trade_times_oct", "alpha", "win_times"]+cols
     stat_ls.append(result)
 
 df_last = pd.DataFrame(stat_ls, columns=cols)

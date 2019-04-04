@@ -2,6 +2,7 @@
 
 import sys
 
+
 class TailRecurseException(Exception):
     def __init__(self, args, kwargs):
         self.args = args
@@ -58,6 +59,7 @@ dataf_h.index=dataf_h["date"]
 
 dataf_m = read_data(exchange, symbols[0], '1m', "2017-01-01", "2018-10-01")
 dataf_m.index=dataf_m["date"]
+
 
 def random_wave_m(cash, btcnum, time, n, slippage, x, y, price_basic):
     open_long=price_basic*x

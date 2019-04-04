@@ -7,7 +7,6 @@ from scipy.stats import rankdata
 from functools import reduce
 import warnings
 import copy
-import statsmodels.api as sm
 warnings.filterwarnings("ignore")
 
 #显示所有列
@@ -631,7 +630,7 @@ class Alphas(object):
         return sma_list(data_mid1-data_mid2, 9, 1)
 
     def alpha153(self):
-        return (sma(self.close,3)+sma(self.close,6)+sma(self.close,12)+sma(self.close,24))/(4*self.close)
+        return (sma(self.close,3)+sma(self.close,6)+sma(self.close,12)+sma(self.close,24))/4
 
     def alpha155(self):
         return sma_list(self.volume, 13, 2)-sma_list(self.volume, 27, 2)-sma_list((sma_list(self.volume, 13, 2)-sma_list(self.volume, 27, 2)), 10, 2)

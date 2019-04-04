@@ -47,8 +47,8 @@ from lib.factors_gtja_two import *
 from lib.myfun import *
 import os
 import talib as ta
-import logging
-from lib.draw_trade_pic import save_trade_fig
+# import logging
+# from lib.draw_trade_pic import save_trade_fig
 
 # 显示所有列
 pd.set_option('display.max_columns', None)
@@ -373,11 +373,7 @@ def summary_net(net_df, plot_in_loops,alpha):
     month_ret = month_profit(net_df)
     # 转换成日净值
     net_df.set_index('date_time', inplace=True)
-    # print(net_df)
-    # print(len(net_df))
     net_df = net_df.resample(rule='1D').apply({"net":"last","index":"last"})
-    # net_df.reset_index(inplace=True)
-    # print(net_df.asfreq())
     net_df.dropna(how="all",inplace=True)
 
     # 计算汇总
@@ -400,8 +396,6 @@ def summary_net(net_df, plot_in_loops,alpha):
 
         net_df['index'] = net_df["index"]/net_df["index"].iloc[0]
         net_df['net'] = net_df['net'] / net_df['net'].iloc[0]
-        # net_df["index_ma5"]=net_df["index_ma5"].values/10
-        # net_df["index_ma20"]=net_df["index_ma20"].values/10
 
         fpath = mkfpath('temp/', param_str + '.png')
 
@@ -414,7 +408,6 @@ def summary_net(net_df, plot_in_loops,alpha):
                        color=['r'], grid=True, ax=ax[1])
         plt.tight_layout()
         plt.savefig(fpath)
-        # plt.show()
 
     return result, cols
 
@@ -434,7 +427,11 @@ alpha_test=["Alpha.alpha011","Alpha.alpha047","Alpha.alpha070","Alpha.alpha072",
 alpha_test=["Alpha.alpha187"]
 '''
 
-a = list(range(1, 202))
+
+"""
+一次性得到所有因子的因子名，这里是Alpha.alpha001到Alpha.alpha292
+"""
+a = list(range(1, 293))
 alpha_test = []
 for x in a:
     if x < 10:
@@ -447,7 +444,7 @@ for x in a:
 # alpha_test = ["Alpha.alpha052","Alpha.alpha058","Alpha.alpha067","Alpha.alpha069","Alpha.alpha110","Alpha.alpha096"]
 # alpha_test = ["Alpha.alpha202"]
 stat_ls = []
-for alpha in alpha_test:
+for alpha in alpha_test:  # 下面这个部分是采用循环的方式一次性得到两百多个因子的单因子策略的回测结果，并保存到文件当中
     # 计算出每个alpha的策略指标
     try:
         for symbol in symbols:
@@ -457,7 +454,6 @@ for alpha in alpha_test:
 
             if symbol == "ethbtc":
                 df = pd.DataFrame({symbol: data[alpha].values, symbol+"_close": data["close"].values, symbol+"_open":data["open"].values, "tickid": data["tickid"].values}, index=data["date"].values)
-                # print(df)
             else:
                 df_1 = pd.DataFrame({symbol: data[alpha].values, symbol+"_close": data["close"].values, symbol+"_open":data["open"].values}, index=data["date"].values)
                 df = df.merge(df_1, how="left", left_index=True, right_index=True)
@@ -477,15 +473,10 @@ for alpha in alpha_test:
         print(alpha)
         # 计算出资产组合对比指标
         dataf = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + "tusdbtc" + "_" + alpha + "_gtja4h" + '.csv', index_col=0)
-        # print(dataf.tail())
         dataf = dataf[dataf["tickid"] > 1530093600]
         dataf.drop_duplicates(subset="tickid", keep="last", inplace=True)
         index_values = list(dataf["close"].values)
-        # print(index_values)
         df["index"] = np.array(index_values)
-        # print(df["index"])
-        # df["index"] = dataf["close"]
-        # print(df["index"])
         for close in symbols_close:
             try:
                 df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
@@ -511,7 +502,6 @@ for alpha in alpha_test:
         df_result["asset_diff"] = df_result["asset"].diff()
         df_result["date_time"] = pd.to_datetime(df_result.index)
         df_result_oct = df_result[df_result["date_time"] > pd.to_datetime("2018-10-01 00:00:00")]
-        # print(df_result_oct.head())
         trade_times_oct = df_result_oct["coinnum"].diff().values
         trade_times_oct = len(np.where(trade_times_oct != 0)[0])-1
         trade_times = df_result["coinnum"].diff().values
@@ -524,40 +514,25 @@ for alpha in alpha_test:
         sum_ret_symbol = []
         for i in symbols:
             df_mid1 = df_result[df_result["buy"] == i]
-            # print(df_mid1)
-            # sum_ret_symbol.append(df_mid1[df_mid1["buy"]==i]["asset_diff"].sum())
             index_list = df_mid1.index
-            # print(type(index_list))
-            # print(index_list)
-            # print(index_list+1)
             index_list = list(set(list(index_list)+list(index_list+1)))
             index_list = sorted(index_list)
-            # print(df_result.ix[index_list][["buy","asset_diff"]])
             df_mid2 = df_result.ix[index_list][["buy", "asset_diff"]]
-            # print(df_mid2.dropna(how="all"))
             df_mid2.dropna(how="all", inplace=True)
-            # print(df_mid2)
             df_mid2.fillna("x", inplace=True)
             df_mid2 = df_mid2[(df_mid2["buy"] == i) | (df_mid2["buy"] == "x")]
             sum_ret_symbol.append(df_mid2["asset_diff"].sum())
-            # exit()
 
         df_result["net"] = df_result["asset"]
-        # print(df_result)
         df_result["index"] = df["index"]
-        # df_result["index_ma5"]=df["index_ma5"]
-        # df_result["index_ma20"]=df["index_ma20"]
         df_result["date_time"] = pd.to_datetime(df_result["date_time"])
-        # print(df_result[["net","asset_diff","buy","asset","date_time"]])
         result, cols = summary_net(df_result[["net", "close", "index", "date_time"]], 0, alpha+"_BIAN_allfactor_4h")
         result = result+sum_ret_symbol
         result = [trade_times, trade_times_oct, alpha, win_times]+result
         cols = cols+symbols
         cols = ["trade_times", "trade_times_oct", "alpha", "win_times"]+cols
         stat_ls.append(result)
-        # df_last=pd.DataFrame(stat_ls, columns=cols)
-        # print(df_last)
-    except (FileNotFoundError, TypeError) as e:
+    except (FileNotFoundError, TypeError, KeyError) as e:
         print(e)
 
 df_last = pd.DataFrame(stat_ls, columns=cols)
@@ -565,7 +540,18 @@ df_last = df_last.sort_values(by="ret_ratio", ascending=False)
 print("max")
 print("不加市场过滤器")
 print(df_last)
-df_last.to_csv("/Users/wuyong/alldata/factor_writedb/factor_stra_4h/factor_result.csv")
+df_last.to_csv("/Users/wuyong/alldata/factor_writedb/factor_stra_4h/factor_result_allfactor.csv")
+
+
+
+
+
+
+
+
+
+
+
 
 # data_k = pd.read_csv("/Users/wuyong/alldata/original_data/btcusdt_day_k.csv", index_col=0)
 #

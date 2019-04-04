@@ -58,6 +58,10 @@ pd.set_option('display.max_columns', None)
 # 显示所有行
 pd.set_option('display.max_rows', None)
 
+"""
+下面是一系列的评价指标，其中主要用到的是总收益、夏普比例、胜率，交易次数等
+"""
+
 
 def total_ret(net):
     # print(net.iloc[-1],net.iloc[0])
@@ -195,6 +199,11 @@ aim_symbols = ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc", "bchabcbtc", "
 symbols_close = [x+"_close" for x in ["ethbtc", "eosbtc", "xrpbtc", "trxbtc", "tusdbtc", "bchabcbtc", "bchsvbtc", "ontbtc", "ltcbtc", "adabtc", "bnbbtc"]]
 
 
+"""
+下面这个函数主要用来计算所有币对的多因子综合因子值
+"""
+
+
 def pick_coin(alpha_list):
     df_symbols_last = None
     df = None
@@ -230,6 +239,12 @@ def pick_coin(alpha_list):
     return df
 
 
+"""
+下面这个函数主要是用于止损，止损的逻辑是出现净值回撤超过10%则止损，所谓净值回撤超过10%是指，买入某个币对（如ETHBTC）之后，随着买入的币对的涨跌，策略当前净值相对于
+买入该币对之后的最大净值下跌了10%以上，则直接平仓所持有的币对（如ETHBTC）。当然，加上止损逻辑之后策略的表现并没有提升，因此后面的策略框架当中并没有加上这个逻辑。
+"""
+
+
 def stop_loss(hold_symbles_list, coinnum_dict_now, price_values, n=1, max_price=0, cash_now=0):
     if n == len(price_values):
         return hold_symbles_list, coinnum_dict_now, max_price, cash_now
@@ -248,6 +263,11 @@ def stop_loss(hold_symbles_list, coinnum_dict_now, price_values, n=1, max_price=
         else:
             pass
         return stop_loss(hold_symbles_list, coinnum_dict_now, price_values, n+1, max_price, cash_now)
+
+
+"""
+下面是多因子策略的交易逻辑
+"""
 
 
 @tail_call_optimized
@@ -295,7 +315,7 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnu
     for a in range(len(hold_symbols_list)):
         coinnum_dict_now[hold_symbols_list[a]] = coinnum_dict_old[hold_symbols_list[a]]
 
-    if len(hold_symbols_list) > 0:
+    if len(hold_symbols_list) > 0 and False:
         if hold_symbols_list == buy_list[-1]:
             startdate = df_now_all["date_time"]
             startdate = datetime.datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
@@ -335,28 +355,31 @@ def multiple_factor(df,cash_list=[10000],asset_list=[10000],buy_list=[[]],coinnu
 #
 # alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha050","Alpha.alpha051",
 #                       "Alpha.alpha069", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
-
-aaa = "014050052069159167175"
 # alpha_two_combine = [("Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha028", "Alpha.alpha050","Alpha.alpha051",
 #                       "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128","Alpha.alpha167", "Alpha.alpha175")]
 # alpha_two_combine = [("Alpha.alpha003","Alpha.alpha024","Alpha.alpha051", "Alpha.alpha052", "Alpha.alpha069",
 #                       "Alpha.alpha159", "Alpha.alpha167", "Alpha.alpha175")]
 # alpha_two_combine = [("Alpha.alpha069", "Alpha.alpha051", "Alpha.alpha167", "Alpha.alpha175", "Alpha.alpha018")]
 alpha_two_combine = [("Alpha.alpha069", "Alpha.alpha018", "Alpha.alpha050", "Alpha.alpha052", "Alpha.alpha055",
-                      "Alpha.alpha060", "Alpha.alpha071", "Alpha.alpha052")]
-df = pick_coin(alpha_two_combine[0])
+                      "Alpha.alpha060", "Alpha.alpha071", "Alpha.alpha052")]  # 比如，这是其中一种多因子组合
+df = pick_coin(alpha_two_combine[0])  # 把这种因子组合放入到计算所有币对因子值的函数当中，这里多种因子的因子值计算的方式是打分法的方式，简单来说加总的不是各个币对的因子值而是币对的因子排名
 
-for close in symbols_close:
+for close in symbols_close:  # 这部分主要用于计算币对的25日均价
     try:
         df[close + str(25)] = ta.MA(df[close].values, timeperiod=25, matype=0)
     except :
         pass
 
 df["date_time"] = df.index.values
-
-cash_list, asset_list, buy_list, coinnum_list, close_list, max_price_list = multiple_factor(df)
+print(df.head())
+cash_list, asset_list, buy_list, coinnum_list, close_list, max_price_list = multiple_factor(df)  # 这个地方计算出某一因子组合下策略运行之后的现金、净值的时间序列
 df_result = pd.DataFrame({"cash": cash_list, "asset": asset_list, "tickid": df["tickid"].values, "buy": buy_list}, index=df["date_time"])
 print(df_result.tail())
+exit()
+
+"""
+下面这个部分主要是画图，把策略净值变化和BTCUSDT的日线级别行情图放到一起，可以用来查看BTCUSDT行情变化对策略净值的影响
+"""
 
 
 df_result["date_time"] = pd.to_datetime(df_result.index.values)
@@ -392,21 +415,17 @@ plt.show()
 
 exit()
 
+"""
+下面这个部分可以用来一次性测试多种多因子组合
+"""
+
 
 dataf = pd.read_csv('/Users/wuyong/alldata/factor_writedb/factor_stra_4h/BIAN_' + "tusdbtc" + "_" + "Alpha.alpha024" + "_gtja4h" + '.csv', index_col=0)
 print(dataf.tail())
 dataf = dataf[dataf["tickid"] > 1530093600]
 dataf.drop_duplicates(subset="tickid", keep="last", inplace=True)
 index_values = list(dataf["close"].values)
-# print(index_values)
-#
-#
-#
-# alpha_test_all = ["Alpha.alpha003", "Alpha.alpha014", "Alpha.alpha024", "Alpha.alpha028", "Alpha.alpha050",
-#                   "Alpha.alpha051", "Alpha.alpha052", "Alpha.alpha069", "Alpha.alpha096", "Alpha.alpha128",
-#                   "Alpha.alpha159", "Alpha.alpha167", "Alpha.alpha175"]
-#
-# alpha_two_combine = list(itertools.combinations(alpha_test_all,10))
+
 alpha_two_combine = [("Alpha.alpha069", "Alpha.alpha018", "Alpha.alpha050", "Alpha.alpha052", "Alpha.alpha055",
                       "Alpha.alpha060", "Alpha.alpha071", "Alpha.alpha052")]
 #
